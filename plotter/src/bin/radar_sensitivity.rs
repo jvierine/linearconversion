@@ -38,7 +38,7 @@ fn main() -> Result<()> {
         );
         f.labels.push(Label::new(
             format!("({})", ['a', 'b', 'c', 'd'][i]),
-            if i % 2 == 0 { 22. } else { 112. },
+            if i == 0 { 17. } else if i % 2 == 0 { 22. } else { 112. },
             if i < 2 { 3. } else { 87. },
         ));
     }
@@ -76,10 +76,10 @@ fn main() -> Result<()> {
         label.leader = Some([22. + (angle + 25.) / 50. * 60., 44.]);
         f.labels.push(label);
     }
-    let mut upward = Label::new("Spitze", 37., 3.);
+    let mut upward = Label::new("Upgoing Z mode", 38., 3.);
     upward.leader = Some([22. + (25. - spitze) / 50. * 60., 8.]);
     f.labels.push(upward);
-    let mut downward = Label::new("Downward", 66., 3.);
+    let mut downward = Label::new("Downgoing Z mode", 71., 3.);
     downward.leader = Some([22. + (25. + spitze) / 50. * 60., 8.]);
     f.labels.push(downward);
     let p = ps[1];
@@ -193,7 +193,9 @@ fn main() -> Result<()> {
         if let Some(l) = f.panels[p].legend.as_mut() {
             // Fixed clear corners, checked in the rendered manuscript.
             l.avoid_data = false;
-            l.position = if i == 3 {
+            l.position = if i == 0 {
+                LegendPosition::AboveCenter
+            } else if i == 3 {
                 LegendPosition::UpperRight
             } else {
                 LegendPosition::UpperLeft

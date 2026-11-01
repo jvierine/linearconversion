@@ -19,8 +19,8 @@ def main():
     angles = np.array([0., 10., 14., 19.5, 25.])
     ranges = np.array([125., 250., 500.]) * 1000
     with h5py.File(args.scan) as src:
-        theta = src['angle_deg'][:]
-        flux = src['incident_vertical_flux_W_m2'][:]
+        theta = src['angle/degrees'][:] if 'angle' in src else src['angle_deg'][:]
+        flux = src['angle/required_flux_W_m2'][:] if 'angle' in src else src['incident_vertical_flux_W_m2'][:]
         idx = [int(np.flatnonzero(np.isclose(theta, a, atol=1e-8, rtol=0))[0]) for a in angles]
         selected = flux[idx]
     eirp = 4*np.pi*selected[:, None]*ranges[None, :]**2/np.cos(np.deg2rad(angles[:, None]))

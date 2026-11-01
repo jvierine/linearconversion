@@ -23,6 +23,17 @@ conda run -n base python scripts/check_reference.py
 
 ## Physics validation
 
+To recompute the denser incidence-angle sweep for Figure 7, run from this
+directory:
+
+```sh
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 conda run -n base python scripts/refine_radar_angle_sweep.py
+```
+
+This solves additional angles using the existing coupled harmonic equations,
+checks selected angles on a finer mesh, and updates only the angle panel's
+HDF5 arrays. It retains the reference case and the other sensitivity panels.
+
 ```sh
 conda run -n base python scripts/validate_physics.py
 ```
