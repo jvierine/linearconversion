@@ -3,23 +3,56 @@ use anyhow::Result;
 use hdf5::File;
 use rustplotlib::*;
 #[path="../time_axes.rs"] mod time_axes;
-const B:&str="#245774";const R:&str="#8B3940";const G:&str="#8895a7";
+const B:&str="#245774";const R:&str="#8B3940";
 fn rd(h:&File,k:&str)->Result<Vec<f64>>{Ok(h.dataset(k)?.read_raw::<f64>()?)}
 fn markers(f:&mut Figure,p:usize,points:&[[f64;2]],color:[f64;3],shape:MarkerShape)->Result<()>{let mut panel=f.panels[p].clone();panel.markers(f,points,&MarkerStyle{shape,size_pt:3.,color})?;f.panels[p]=panel;Ok(())}
 fn main()->Result<()>{
- let h=File::open("data/plasma_line_rcs.h5")?;let cal=rd(&h,"ion_check/per_record_multiplier")?;let t:Vec<_>=rd(&h,"time_unix_s")?.iter().map(|v|(v-1525392000.)/3600.).collect();let rows=rd(&h,"catalog/rows")?;
- let mut f=Figure::new(IntendedUse::ArticleWide);f.width_mm=190.;f.height_mm=175.;let ps=f.grid(2,1)?;
+ let h=File::open("data/plasma_line_rcs.h5")?;
+ let t:Vec<_>=rd(&h,"time_unix_s")?.iter().map(|v|(v-1525392000.)/3600.).collect();
+ let rows=rd(&h,"catalog/rows")?;
+ // Copernicus manuscript is 177 mm wide with 10 pt body type.
+ let mut f=ArticleLayout::new(177.,10.)?.figure(1.,92.)?;
+ let p=f.grid(1,1)?[0];f.height_mm=92.;
+ f.panels[p].rect=Rect::new(22.,16.,131.,58.);
+ let mut ax=Axes::new([t[0],*t.last().unwrap()],[-115.,-60.],"",r"Equivalent RCS (dB m$^2$)");
+ ax.yticks=vec![-110.,-100.,-90.,-80.,-70.,-60.];
+ time_axes::time_axes(&mut ax,true,true)?;
+ // Independent right-axis coordinates, NOT a fixed RCS-to-SNR conversion:
+ // the event calibration and range vary. Plot actual SNR from each record.
+ let snr_to_primary=|db:f64|db-105.;
+ ax.secondary_y=Some(SecondaryAxis::new("SNR (dB)",vec![-10.,0.,10.,20.,30.,40.],snr_to_primary)?);
+ f.panels[p].axes=Some(ax);
  for j in 0..2 {
-  let p=ps[j];f.panels[p].rect=Rect::new(27.,26.+j as f64*70.,155.,48.);
-  let mut ax=Axes::new([t[0],*t.last().unwrap()],[-120.,-60.],"",r"Equivalent RCS (dB m$^2$)");ax.yticks=vec![-120.,-100.,-80.,-60.];time_axes::time_axes(&mut ax,j==1,j==0)?;f.panels[p].axes=Some(ax);
-  let sens=rd(&h,&format!("band{j}/rcs_sensitivity_m2"))?;let pts:Vec<_>=t.iter().zip(sens).enumerate().filter(|(i,_)|cal[*i]>0.05&&cal[*i]<1.).map(|(_,(&x,y))|[x,10.*y.log10()]).collect();let mut line=Line::new(pts,G);line.width_pt=0.5;f.panels[p].push(Layer::Line(line));
-  let mut pts=vec![];let mut opp=vec![];
-  for r in rows.chunks(14){if r[0] as usize==j{pts.push([(r[2]-1525392000.)/3600.,r[9]])}else if r[0] as usize==j+2{opp.push([(r[2]-1525392000.)/3600.,r[9]])}}
-  markers(&mut f,p,&pts,if j==0{[0.141,0.341,0.455]}else{[0.322,0.498,0.427]},MarkerShape::Circle)?;markers(&mut f,p,&opp,[0.545,0.224,0.251],MarkerShape::Square)?;
-  f.panels[p].label_at(if j==0{"4.51 MHz"}else{"5.34 MHz"},[14.82,-66.]);
-  let mut l=Legend::new(vec![LegendEntry::circle("Enhanced branch",if j==0{B}else{"#527f6d"}),LegendEntry::marker("Opposite candidate",MarkerShape::Square,R),LegendEntry::line("Sensitivity",G)]);l.columns=1;f.panels[p].legend=Some(l);
+  let color=if j==0{B}else{R};
+  let rgb=if j==0{[0.141,0.341,0.455]}else{[0.545,0.224,0.251]};
+  let shape=if j==0{MarkerShape::Circle}else{MarkerShape::Diamond};
+  let mut selected:Vec<_>=rows.chunks(14).filter(|r|r[0] as usize==j).collect();
+  selected.sort_by(|a,b|a[2].total_cmp(&b[2]));
+  let rcs:Vec<_>=selected.iter().map(|r|[(r[2]-1525392000.)/3600.,r[9]]).collect();
+  // Column 7 is fitted excess spectral area times 44 us: line power divided
+  // by noise power in 1/(44 us)=22.727 kHz. It is not the tallest FFT bin.
+  let snr:Vec<_>=selected.iter().map(|r|[(r[2]-1525392000.)/3600.,snr_to_primary(10.*r[7].log10())]).collect();
+  let mut connected=vec![];
+  for (i,&point) in snr.iter().enumerate(){
+   if i>0 && (point[0]-snr[i-1][0])*3600.>100. {connected.push([f64::NAN;2]);}
+   connected.push(point);
+  }
+  let mut line=Line::new(connected,color);line.width_pt=0.8;
+  if j==1 {line.dash=Some("3 2".into());}
+  f.panels[p].push(Layer::Line(line));
+  markers(&mut f,p,&snr,rgb,MarkerShape::HorizontalCap)?;
+  markers(&mut f,p,&rcs,rgb,shape)?;
  }
+ let mut snr5=LegendEntry::line("5.34 MHz SNR",R);
+ if let LegendSymbol::Line{dash,..}=&mut snr5.symbol {*dash=Some("3 2".into());}
+ let mut legend=Legend::new(vec![
+  LegendEntry::marker("4.51 MHz RCS",MarkerShape::Circle,B),
+  LegendEntry::marker("5.34 MHz RCS",MarkerShape::Diamond,R),
+  LegendEntry::line("4.51 MHz SNR",B),snr5]);
+ legend.columns=2;legend.position=LegendPosition::UpperRight;
+ f.panels[p].legend=Some(legend);
  for ext in ["png","pdf"]{f.save(format!("figures/plasma_line_rcs_time.{ext}"))?;}
+ if std::env::args().any(|s|s=="--time-only"){return Ok(());}
  // Native spectral-core fits for each detected branch's strongest return.
  let sums=rd(&h,"catalog/peak_summary")?;let mut f=Figure::new(IntendedUse::ArticleWide);f.width_mm=190.;f.height_mm=220.;let ps=f.grid(3,1)?;
  for (panel,s) in sums.chunks(10).enumerate(){
