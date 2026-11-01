@@ -71,6 +71,7 @@ fn main() -> Result<()> {
     let em = rd(&root, "overview_net_EM_flux_percent")?;
     let kx = h.dataset("kx_rad_m")?.read_scalar::<f64>()?;
     let angle = att(&root, "angle_deg")?;
+    let expanded = args.iter().any(|a| a == "--expanded-scales");
     let reflected = 100. * att(&root, "reflected_EM_fraction")?;
     let transmitted = 100. * att(&root, "transmitted_EM_fraction")?;
     let frames = if args.iter().any(|a| a == "--preview") {
@@ -225,11 +226,13 @@ fn main() -> Result<()> {
                 y - 9.,
                 "#171717",
             );
-            // Fixed scales across movies: weak responses are not magnified into apparent
-            // strong conversion. Top and bottom have their own fixed physical ranges.
-            let emax = if row == 0 { 80. } else { 140. };
-            let dmax = if row == 0 { 50. } else { 85. };
-            let fx = if row == 0 { [-0.15, 4.] } else { [-13., 0.4] };
+            // Expanded Spitze scales retain physical units and stay fixed in time.
+            let emax = if expanded { if row == 0 { 10. } else { 5. } }
+                else if row == 0 { 80. } else { 140. };
+            let dmax = if expanded { if row == 0 { 7. } else { 3. } }
+                else if row == 0 { 50. } else { 85. };
+            let fx = if expanded { if row == 0 { [-0.002, 0.065] } else { [-0.016, 0.002] } }
+                else if row == 0 { [-0.15, 4.] } else { [-13., 0.4] };
             let p = ps[offset];
             let mut ax = Axes::new(
                 [-emax, emax],
@@ -302,7 +305,9 @@ fn main() -> Result<()> {
             let p = ps[offset + 2];
             let mut ax = Axes::new(fx, yr, r"$F_{p,z}/S_{\rm inc}$ (\%)", "");
             ax.show_y_axis = false;
-            ax.xticks = if row == 0 {
+            ax.xticks = if expanded {
+                if row == 0 { vec![0., 0.03, 0.06] } else { vec![-0.015, -0.0075, 0.] }
+            } else if row == 0 {
                 vec![0., 2., 4.]
             } else {
                 vec![-12., -6., 0.]
@@ -335,6 +340,9 @@ fn main() -> Result<()> {
             }
         }
         f.auto_colorbar_layout = false;
+        if expanded {
+            label(&mut f, "Expanded Spitze scales", 340., 276., "#171717");
+        }
         label(&mut f, "Fluxes are period averages.", 78., 267., "#171717");
         label(
             &mut f,

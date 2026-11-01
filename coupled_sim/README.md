@@ -341,8 +341,10 @@ zoom and orange B marks the bottomside zoom. Matching boxes locate the zooms on
 the overview density and electromagnetic-energy-flux profiles. Each zoom shows
 the signed vertical electric field, a two-dimensional density perturbation,
 and the signed pressure energy flux. Height increases upward in every panel.
-Field and density color limits are fixed across the three movies, so a weak
-response is not visually magnified into apparent strong conversion.
+Field and density color limits stay fixed in time. The Spitze movie uses
+explicitly labeled expanded scales to reveal its weaker waves: electric-field
+ratios of +/-10 and +/-5, and density ranges of +/-7 and +/-3 ppm, on the top
+and bottom respectively. Compare axis values, not visual size, across movies.
 
 The full-height electromagnetic curve is the period-averaged **net vertical
 Poynting flux**, calculated from E cross B / mu0, positive upward and normalized

@@ -15,7 +15,8 @@ def main():
         if args.case and args.case!=label:continue
         prepare(label,side)
         folder=OUT/(label+'_frames')
-        subprocess.run([str(ROOT/'plotter/target/release/conversion_animation'),str(OUT/(label+'_display.h5')),str(folder),title],check=True,cwd=ROOT)
+        display_flags=['--expanded-scales'] if label=='topside_spitze' else []
+        subprocess.run([str(ROOT/'plotter/target/release/conversion_animation'),str(OUT/(label+'_display.h5')),str(folder),title,*display_flags],check=True,cwd=ROOT)
         one=OUT/(label+'_period.mp4');final=OUT/(label+'.mp4')
         subprocess.run(['ffmpeg','-y','-loglevel','error','-framerate','24','-i',str(folder/'frame_%03d.png'),'-vf','pad=ceil(iw/2)*2:ceil(ih/2)*2','-c:v','libx264','-crf','18','-pix_fmt','yuv420p',str(one)],check=True)
         # Three repeats of the periodic CW solution. The displayed time resets
@@ -30,6 +31,7 @@ def main():
         shutil.copy2(final,media/(label+'.mp4'))
         shutil.copy2(folder/'frame_000.png',media/(label+'.png'))
         with h5py.File(portable/(label+'.h5'),'a') as h:
+            h.attrs['expanded_display_scales'] = label=='topside_spitze'
             for key,path in [('rust_driver','coupled_sim/src/main.rs'),('coupled_timestep','coupled_sim/src/lib.rs'),('Cargo.lock','coupled_sim/Cargo.lock'),('renderer','plotter/src/bin/conversion_animation.rs')]:
                 h['provenance/'+key]=(ROOT/path).read_text()
         for filename in ['scan.h5','validation.h5']:
