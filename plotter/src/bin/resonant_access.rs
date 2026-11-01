@@ -122,7 +122,8 @@ fn main() -> Result<()> {
             &rd(&polarization, &format!("fields/{name}_height_m"))?, index, label));
     }
     for (y, index, label) in [(0., 3, "Resonance"), (critical, 4, r"$f_{pe}=f_0$")] {
-        keys.push(series(&mut f, ps[1], &[0.01, 200.], &[y, y], index, label));
+        // Reference heights are identified in the caption; keep the field key compact.
+        series(&mut f, ps[1], &[0.01, 200.], &[y, y], index, label);
     }
     let mut leg = Legend::new(keys);
     // Fixed clear corner, checked in the rendered manuscript.
@@ -166,8 +167,6 @@ fn main() -> Result<()> {
     f.panels[ps[0]].push(Layer::Line(leader));
     f.labels.push(Label::new("(a)", 22., 3.));
     f.labels.push(Label::new("(b)", 112., 3.));
-    for ext in ["png", "pdf"] {
-        f.save(format!("figures/resonant_access.{ext}"))?;
-    }
+    f.save_for_article("figures/resonant_access.pdf", "figures/model/resonant_access.pdf")?;
     Ok(())
 }

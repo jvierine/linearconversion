@@ -41,9 +41,9 @@ fn main()->Result<()>{
  let t=rd(&dh,"map/time_edges_utc_hour")?;let z=rd(&dh,"map/height_km")?;let rows=rd(&h,"enhancements")?;let mut points:Vec<Vec<[f64;2]>>=vec![vec![];2];
  for r in rows.chunks(14){let j=r[0] as usize;if j<2{points[j].push([(r[2]-1525392000.)/3600.,r[4]]);}}
  // Match the reference's 496:420 axis aspect, rather than stretching time.
- let map_height=147.*420./496.;
- let mut f=Figure::new(IntendedUse::ArticleWide);f.width_mm=200.;let p=f.grid(1,1)?[0];f.height_mm=171.;
- f.panels[p].rect=Rect::new(22.,24.,147.,map_height);let mut ax=Axes::new([t[0],*t.last().unwrap()],[50.,140.],"","Altitude above radar (km)");time_axes::time_axes(&mut ax,true,true)?;ax.yticks=(5..=14).map(|i|i as f64*10.).collect();f.panels[p].axes=Some(ax);
+ let map_height=137.*420./496.;
+ let mut f=ArticleLayout::new(177.,10.)?.figure(1.,148.)?;let p=f.grid(1,1)?[0];f.height_mm=148.;
+ f.panels[p].rect=Rect::new(17.,20.,137.,map_height);let mut ax=Axes::new([t[0],*t.last().unwrap()],[50.,140.],"","Altitude above radar (km)");time_axes::time_axes(&mut ax,true,true)?;ax.yticks=(5..=14).map(|i|i as f64*10.).collect();f.panels[p].axes=Some(ax);
  let density_palette=rd(&dh,"palette/density_rgb")?.chunks_exact(3).map(|v|[v[0],v[1],v[2]]).collect();
  let sc=f.scale(Scale::new([8.,12.],Normalization::Linear,ColorMap::listed(density_palette)?)?);
  f.panels[p].push(Layer::Pcolormesh(Field::new(t,edges(&z),rd(&dh,"map/ne_m3")?.iter().map(|x|x.max(1e8).log10()).collect(),sc)?));
@@ -57,8 +57,8 @@ fn main()->Result<()>{
   plain_symbols(&mut f.panels[p],&[[left+0.12,*z]],j==0);
   f.panels[p].label_at(if j==0{"4.51 MHz"}else{"5.34 MHz"},[left+0.55,*z]);
  }
- f.colorbars.push(Colorbar::new(Rect::new(173.,24.,3.,map_height),sc,r"$\log_{10}(n_e\,/\,\mathrm{m}^{-3})$",(16..=24).map(|i|i as f64/2.).collect()));f.layout_colorbars()?;
- save(&f,"density_enhancement_times")?;
+ f.colorbars.push(Colorbar::new(Rect::new(158.,20.,3.,map_height),sc,r"$\log_{10}(n_e\,/\,\mathrm{m}^{-3})$",(16..=24).map(|i|i as f64/2.).collect()));f.layout_colorbars()?;
+ f.save_for_article("figures/density_enhancement_times.pdf", "figures/model/density_enhancement_times.pdf")?;
  // Antialiased screen preview, not filtering or resampling of scientific data.
  let raster=image::open("figures/density_enhancement_times.png")?;
  let height=(800. * raster.height() as f64/raster.width() as f64).round() as u32;

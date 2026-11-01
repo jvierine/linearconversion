@@ -12,9 +12,7 @@ fn line(f: &mut Figure, p: usize, x: &[f64], y: &[f64], index: usize, label: &st
     key
 }
 fn save(f: &Figure, name: &str) -> Result<()> {
-    for ext in ["png", "pdf"] {
-        f.save(format!("figures/{name}.{ext}"))?;
-    }
+    f.save_for_article(format!("figures/{name}.pdf"), &format!("figures/model/{name}.pdf"))?;
     Ok(())
 }
 fn main() -> Result<()> {

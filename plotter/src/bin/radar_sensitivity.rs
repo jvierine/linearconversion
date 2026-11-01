@@ -26,20 +26,20 @@ fn main() -> Result<()> {
         .unwrap_or("reference/coupled/radar_sensitivity.h5".into());
     let h = File::open(path)?;
     let obs = db(h.attr("reference_RCS_m2")?.read_scalar::<f64>()?);
-    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 156.)?;
+    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 148.)?;
     let ps = f.grid(2, 2)?;
-    f.height_mm = 156.;
+    f.height_mm = 148.;
     for (i, &p) in ps.iter().enumerate() {
         f.panels[p].rect = Rect::new(
             if i % 2 == 0 { 22. } else { 112. },
-            if i < 2 { 8. } else { 92. },
+            if i < 2 { 8. } else { 84. },
             60.,
             44.,
         );
         f.labels.push(Label::new(
             format!("({})", ['a', 'b', 'c', 'd'][i]),
             if i == 0 { 17. } else if i % 2 == 0 { 22. } else { 112. },
-            if i < 2 { 3. } else { 87. },
+            if i < 2 { 3. } else { 79. },
         ));
     }
     let p = ps[0];
@@ -65,23 +65,6 @@ fn main() -> Result<()> {
     );
     let observed = line(&mut f, p, &[-25., 25.], &[obs, obs], 4, "Observed");
     f.panels[p].legend = Some(Legend::new(vec![model, observed]));
-    // Cold-plasma Spitze geometry from the same field and pump frequency.
-    let spitze_file = File::open("reference/coupled/spitze_transmission.h5")?;
-    let spitze = spitze_file.attr("spitze_angle_magnitude_deg")?.read_scalar::<f64>()?;
-    for angle in [-spitze, spitze] {
-        line(&mut f, p, &[angle, angle], &[-125., -55.], 3, "");
-        let mut label = Label::new(
-            if angle < 0. { r"$-16.7^\circ$" } else { r"$+16.7^\circ$" },
-            if angle < 0. { 37. } else { 66. }, 48.);
-        label.leader = Some([22. + (angle + 25.) / 50. * 60., 44.]);
-        f.labels.push(label);
-    }
-    let mut upward = Label::new("Upgoing Z mode", 38., 3.);
-    upward.leader = Some([22. + (25. - spitze) / 50. * 60., 8.]);
-    f.labels.push(upward);
-    let mut downward = Label::new("Downgoing Z mode", 71., 3.);
-    downward.leader = Some([22. + (25. + spitze) / 50. * 60., 8.]);
-    f.labels.push(downward);
     let p = ps[1];
     let mut ax = Axes::new(
         [0., 90.],
@@ -139,7 +122,7 @@ fn main() -> Result<()> {
     optimum_label.leader = Some(xy(opt[0], opt[1]));
     f.labels.push(optimum_label);
     let mut cb = Colorbar::new(
-        Rect::new(112., 70., 60., 2.5),
+        Rect::new(112., 66., 60., 2.5),
         sc,
         r"RCS (dB m$^2$)",
         vec![-120., -100., -80.],
@@ -202,8 +185,6 @@ fn main() -> Result<()> {
             };
         }
     }
-    for ext in ["pdf", "png"] {
-        f.save(format!("figures/radar_sensitivity.{ext}"))?;
-    }
+    f.save_for_article("figures/radar_sensitivity.pdf", "figures/model/radar_sensitivity.pdf")?;
     Ok(())
 }

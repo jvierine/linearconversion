@@ -5,6 +5,6 @@ edition = "2024"
 default-run = "isr-figures"
 [dependencies]
 anyhow = "1"
-rustplotlib = { git = "https://github.com/jvierine/rustplotlib.git", rev = "39d20b24467d31f70924bb4bbc6cdafa97b083ec" }
+rustplotlib = { git = "https://github.com/jvierine/rustplotlib.git", rev = "96e8aaafce8607f8aa506cd59089255a904fc499" }
 hdf5 = { package = "hdf5-metno", version = "0.12" }
 image = { version = "0.25", default-features = false, features = ["png"] }

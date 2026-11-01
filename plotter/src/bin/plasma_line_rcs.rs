@@ -46,7 +46,7 @@ fn main() -> Result<()> {
     let mut f = ArticleLayout::new(177., 10.)?.figure(1., 74.)?;
     let p = f.grid(1, 1)?[0];
     f.height_mm = 74.;
-    f.panels[p].rect = Rect::new(22., 16., 131., 40.);
+    f.panels[p].rect = Rect::new(17., 16., 144., 40.);
     let mut ax = Axes::new(
         [t[0], *t.last().unwrap()],
         [-112., -63.],
@@ -99,9 +99,7 @@ fn main() -> Result<()> {
     legend.columns = 1;
     legend.position = LegendPosition::UpperRight;
     f.panels[p].legend = Some(legend);
-    for ext in ["png", "pdf"] {
-        f.save(format!("figures/plasma_line_rcs_time.{ext}"))?;
-    }
+    f.save_for_article("figures/plasma_line_rcs_time.pdf", "figures/model/plasma_line_rcs_time.pdf")?;
     if std::env::args().any(|s| s == "--time-only") {
         return Ok(());
     }

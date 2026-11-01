@@ -17,6 +17,6 @@ fn main()->Result<()>{
   f.panels[p].plot(points,label);
  }
  f.panels[p].legend.as_mut().unwrap().position=LegendPosition::UpperRight;
- for ext in ["png","pdf"]{f.save(format!("figures/es_fregion_electric_field.{ext}"))?;}
+ f.save_for_article("figures/es_fregion_electric_field.pdf", "figures/model/es_fregion_electric_field.pdf")?;
  Ok(())
 }
