@@ -1,5 +1,6 @@
 """Scientific diagnostics/plot arrays for the shared Rust two-way simulation."""
 import sys
+from pathlib import Path
 import numpy as np
 import h5py
 from scipy.constants import e,m_e,epsilon_0,c
@@ -8,16 +9,17 @@ from scipy.optimize import brentq
 from coupled_arecibo import ROOT,OUT,PROFILE,CS,W
 sys.path.insert(0,str(ROOT))
 from radar import beam,RE,LAM,KR,PT,TSYS,kb
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+from isr.coherent import sideband_amplitude,spectral_snr
 
 def radar(h):
     z=h['z'][:];zz=z-h.attrs['center_m'];dn=h['density_phasor_m3'][:]
-    kx=float(h['kx_rad_m'][()]);freq=h.attrs['frequency_hz'];_,a,b,g=beam(z)
-    J=a/(a-1j*b)*np.exp(-kx*kx/(4*(a-1j*b)))*np.exp(-2j*g)
+    kx=float(h['kx_rad_m'][()]);freq=h.attrs['frequency_hz']
     powers=[]
     for lo,hi in [(-80,20),(-100,30),(-110,40)]:
         win=np.sin(.5*np.pi*np.clip(np.minimum(zz-lo,hi-zz)/10,0,1))**2
-        col=trapezoid(.5*dn*np.exp(1j*(2*KR+2*np.pi*freq/c)*zz)*J*win,z)
-        powers.append(PT*RE**2*LAM**2*abs(col)**2)
+        echo=sideband_amplitude(z,dn,freq,kx,win,reference_range_m=h.attrs['center_m'])
+        powers.append(abs(echo)**2)
     return np.array(powers)
 
 def main():
@@ -46,7 +48,12 @@ def main():
             wavelength_phase_m=2*np.pi/np.maximum(-phase_k[use],1e-12),
             frequency_mhz=obsf/1e6,observed_snr=obs,
             spectrum_frequency_mhz=np.linspace(5.27,5.41,1001))
-        datasets['spectrum_snr']=target*np.sinc((datasets['spectrum_frequency_mhz']*1e6-W/(2*np.pi))*tau)**2+fit[2]
+        sample_rate=25e6;time=np.arange(round(tau*sample_rate))/sample_rate
+        win=np.sin(.5*np.pi*np.clip(np.minimum(zz+100,30-zz)/10,0,1))**2
+        amps=[sideband_amplitude(z,dn,W/(2*np.pi),kx,win,branch,h.attrs['center_m'])*scale for branch in [1,-1]]
+        signal=amps[0]*np.exp(-1j*W*time)+amps[1]*np.exp(1j*W*time)
+        ff,ss=spectral_snr(signal,sample_rate,32768,TSYS,C)
+        datasets['spectrum_snr']=np.interp(datasets['spectrum_frequency_mhz']*1e6,ff,ss)+fit[2]
         usewave=(zz>-12)&(zz<-.8)
         phase_match=z[usewave][np.argmin(abs(phase_k[usewave]-kz))]
         summary=dict(incident_flux_to_match_observed_W_m2=flux,required_density_at_bragg_ppm=float(np.interp(match,z,abs(dn)/ne)*scale*1e6),

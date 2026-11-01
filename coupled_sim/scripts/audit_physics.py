@@ -120,7 +120,7 @@ def projected_power(h,lo=-100.,hi=30.):
     wavelength=c/430e6;kr=2*np.pi/wavelength;gain=10**(61.1/10)
     waist=np.sqrt(gain)*wavelength/(np.sqrt(8)*np.pi);rayleigh=np.pi*waist**2/wavelength
     width=waist*np.sqrt(1+(z/rayleigh)**2);curvature=z+rayleigh**2/z
-    a=2/width**2;b=kr/curvature;kx=float(h['kx_rad_m'][()])
+    a=2/width**2;b=kr/curvature+np.pi*h.attrs['frequency_hz']/(c*z);kx=float(h['kx_rad_m'][()])
     gaussian=a/(a-1j*b)*np.exp(-kx**2/(4*(a-1j*b))-2j*np.arctan(z/rayleigh))
     window=np.sin(np.pi/2*np.clip(np.minimum(x-lo,hi-x)/10,0,1))**2
     density_wave=.5*dn*np.exp(1j*(2*kr+2*np.pi*h.attrs['frequency_hz']/c)*x)*gaussian*window

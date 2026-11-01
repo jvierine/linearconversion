@@ -82,3 +82,27 @@ The original Seid scripts are an archival source snapshot, not ported Python 3
 software. The current analysis scripts use conda base. Auxiliary exploratory
 scripts can require intermediate products beyond the figure inputs bundled here;
 the explicit workflows above are the supported entry points.
+
+## Coherent radar echo
+
+`isr/coherent.py` implements the retarded coherent-voltage integral in Kudeki's
+*ECE 458 Lecture Notes on Applications of Radio Wave Propagation* (2026 revision),
+Eqs. (5.49), (5.51), and Sect. 5.3.4. Fields are summed before squaring, with the
+transmitted envelope, antenna response, and density propagation delay retained.
+The notes are cited in the paper; the private attachment is not redistributed.
+
+Reproduce the saved harmonic-model echo and its 25 MHz, 44 microsecond spectrum:
+
+```sh
+conda run -n base python coupled_sim/scripts/coherent_echo.py \
+  --model reference/coupled/coherent_echo.h5 --output output/coherent_echo_replay.h5
+conda run -n base python -m pytest tests/test_coherent.py -q
+cargo run --release --manifest-path plotter/Cargo.toml --bin coherent_echo
+```
+
+The reference HDF5 contains the compact simulated density profile, both sideband
+amplitudes, complex echo samples, spectrum, and measurement comparison. Amplitude
+is fitted under the coherent beam-filling assumption. The effective rectangular
+record models the principal spectral response, not the unknown full code/receiver
+ambiguity function. This calculation uses the converged linear event model;
+the experimental nonlinear solver's spatial-convergence limits remain unchanged.
