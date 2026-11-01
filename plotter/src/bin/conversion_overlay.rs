@@ -200,12 +200,15 @@ fn main() -> Result<()> {
         }
     }
     if article {
-        // Stay on the high-frequency side, clear of the ordinary plasma line.
+        // Point to the user-identified ambiguity replicas, including the narrow
+        // frequency-offset peaks at the layer height; leave the true peaks alone.
         let text = fig.panels[p].label_at("Doppler sidelobes", [5.05, 127.3]);
         text.color = "#ffffff".into();
         for (start, end) in [
-            ([4.85, 126.2], [4.92, 122.25]),
-            ([5.45, 126.2], [5.68, 121.0]),
+            ([4.35, 126.2], [4.3335, 117.8]),
+            ([4.75, 126.2], [4.8340, 117.8]),
+            ([5.15, 126.2], [5.30, 121.4]),
+            ([5.65, 126.2], [5.8350, 117.8]),
         ] {
             let r = fig.panels[p].rect;
             let sx = r.width / 4.25;
