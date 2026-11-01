@@ -14,6 +14,6 @@ fn main()->Result<()>{
  line(&mut f,p,&total,&z,"#245774",false);line(&mut f,p,&ez,&z,"#8b3940",true);
  let xx=if j==0{[0.05,250.]}else{[0.,200.]};line(&mut f,p,&xx,&[0.,0.],"#a8afb5",true);
  if j==0{line(&mut f,p,&xx,&[refl,refl],"#4c7566",true);}
- let mut leg=Legend::new(if j==0{vec![LegendEntry::line(r"Total $|\mathbf E|$","#245774"),LegendEntry::line(r"Vertical $|E_z|$","#8b3940")]}else{vec![LegendEntry::line(r"Total $|\mathbf E|$","#245774"),LegendEntry::line(r"Vertical $|E_z|$","#8b3940")]});leg.position=LegendPosition::LowerRight;leg.avoid_data=false;f.panels[p].legend=Some(leg);}
+ let mut leg=Legend::new(if j==0{vec![LegendEntry::line("Total","#245774"),LegendEntry::line(r"$E_z$","#8b3940")]}else{vec![LegendEntry::line("Total","#245774"),LegendEntry::line(r"$E_z$","#8b3940")]});leg.position=LegendPosition::LowerRight;leg.avoid_data=false;f.panels[p].legend=Some(leg);}
  f.save("figures/fdtd_reflection_field.png")?;Ok(())
 }
