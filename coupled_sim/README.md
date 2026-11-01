@@ -313,3 +313,65 @@ These profiles are its harmonic steady-state solutions. Heating and port loss
 close within 0.03 percentage point for all tested illuminations; the residual
 includes finite-port incident/reflected interference and discretization.
 Results and source provenance are in `reference/coupled/hf_absorption_profile.h5`.
+
+## Animated bottomside and topside conversion
+
+The same coupled Rust Yee/electron-fluid timestep now has movies of both sides
+of the measured smooth sporadic-E layer. These are **sustained continuous-wave
+solutions**, initialized from the discrete driven solution, then
+advanced for one radio period. They are not switch-on or growth simulations.
+All six Maxwell components and the electron current/pressure/continuity remain
+coupled; the displayed horizontal dependence is the model's single Fourier mode.
+
+From the repository root:
+
+```sh
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/lmode_animation.py scan
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/lmode_animation.py record
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/check_conversion_animation.py
+conda run -n base python coupled_sim/scripts/render_conversion_animations.py
+```
+
+Movies and the complete HDF5 fields are written to `output/lmode_animation/`.
+Rendering requires the pinned rustplotlib crate and `ffmpeg`. The MP4 repeats
+one period three times, slowed to 12 seconds. The GIF loops the same period.
+No envelope growth or upward-moving wave is imposed by the plotter. The movies
+show the background density, signed vertical electric field, signed density
+perturbation and a two-dimensional density cut, with height increasing upward.
+
+The incident wave is the **ordinary eigenmode at the lower port** in all cases.
+Angles are signed, vacuum-equivalent angles from vertical in the magnetic
+meridian; positive horizontal wave number is along the horizontal component of
+B, with B directed downward. Thus opposite signs describe different directions.
+The through-layer calculation tests the Z/L transmission route, rather than
+assuming that the wave is purely field-aligned L mode everywhere.
+
+For 5.340 MHz and this layer, the upward Spitze window is at -16.697 degrees.
+It transmits 91.64% of the incident EM power but is not the strongest generator
+of upward electron plasma waves. The O-input scan from -24 to +24 degrees gives
+its largest **outward pressure energy flux averaged 3--6 m from resonance** at
+-12.272 degrees on the topside and +16.466 degrees on the bottomside. This is
+an explicit conversion metric after some collisional damping; it is not the
+fraction of all HF energy absorbed or an optimization over all azimuths and
+polarizations. The topside optimum transmits 23.64%, reflects 47.16%, and loses
+29.20% of its EM power between the outer ports. The bottomside optimum transmits
+negligibly, reflects 4.27%, and loses 95.73%. These losses include ordinary
+collisional absorption and must not be called conversion efficiencies.
+
+The numerical wave phase reaches the approximate 430 MHz Bragg wave number
+4 pi f/c at 3.74 m above the topside resonance, and 3.98 m below the bottomside
+resonance. Local magnetized warm-fluid dispersion predicts 3.76 and 4.04 m.
+The movies use an illustrative incident peak field of **1 mV/m** at 115.1 km;
+this is not an estimate of the event's unknown transmitter. Amplitudes scale
+linearly in this model. All cases include electron-ion and electron-neutral
+collisions, but **not Landau damping**.
+
+The native evolution uses 5 mm cells near both conversion layers and 0.25 m
+maximum spacing elsewhere. Halving both spacings changes the density envelope
+by 0.42--0.43% over 1--8 m outward from resonance. The complex wave differs by
+12--13.5%, owing to phase sensitivity, so these movies do not establish percent-
+level convergence of phase or coherent radar power. Native evolution agrees
+with its discrete driven solution to better than 1e-7; Gauss's law, outgoing
+phase/pressure direction, wavelength contraction and collisional decay are
+checked independently in the saved fields. Compact recordings, the angle scan
+and check results are in `reference/coupled/conversion_animation/`.

@@ -36,13 +36,14 @@ def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,ther
     if center is None:center=brentq(lambda z:profile(z)*e*e/(m_e*epsilon_0)-D,117000,118100)
     lo,hi=cfg.get('bounds',(114000-(buffer-600),122000+(buffer-600)))
     fine_lo,fine_hi=cfg.get('fine_bounds',(-80.,20.))
+    fine_intervals=cfg.get('fine_intervals',[(fine_lo,fine_hi)])
     points=[center]
     for direction,bound in [(1,hi),(-1,lo)]:
         v=center
         while (v-bound)*direction<0:
             d=v-center
-            # Resolve outgoing Bragg and damped waves below the conversion layer.
-            outside=max(fine_lo-d,d-fine_hi,0.)
+            # Resolve outgoing waves near one or both resonance crossings.
+            outside=min(max(a-d,d-b,0.) for a,b in fine_intervals)
             base=dz
             if 'phase_grid_distance_m' in cfg:
                 # Keep roughly fixed cells per local Langmuir wavelength
