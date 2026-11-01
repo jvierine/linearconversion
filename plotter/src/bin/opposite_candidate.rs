@@ -45,8 +45,7 @@ fn main()->Result<()>{
  let mut f=Figure::new(IntendedUse::ArticleWide);f.width_mm=200.;let p=f.grid(1,1)?[0];f.height_mm=171.;
  f.panels[p].rect=Rect::new(22.,24.,147.,map_height);let mut ax=Axes::new([t[0],*t.last().unwrap()],[50.,140.],"","Altitude above radar (km)");time_axes::time_axes(&mut ax,true,true)?;ax.yticks=(5..=14).map(|i|i as f64*10.).collect();f.panels[p].axes=Some(ax);
  let density_palette=rd(&dh,"palette/density_rgb")?.chunks_exact(3).map(|v|[v[0],v[1],v[2]]).collect();
- // Peak measured density is 4.94e11 m^-3; 11.7 dex keeps it at the palette maximum.
- let sc=f.scale(Scale::new([8.,11.7],Normalization::Linear,ColorMap::listed(density_palette)?)?);
+ let sc=f.scale(Scale::new([8.,12.],Normalization::Linear,ColorMap::listed(density_palette)?)?);
  f.panels[p].push(Layer::Pcolormesh(Field::new(t,edges(&z),rd(&dh,"map/ne_m3")?.iter().map(|x|x.max(1e8).log10()).collect(),sc)?));
  // Plain black symbols, without halos; coordinates remain measured values.
  for (j,pts) in points.iter().enumerate(){plain_symbols(&mut f.panels[p],pts,j==0);}
@@ -58,7 +57,7 @@ fn main()->Result<()>{
   plain_symbols(&mut f.panels[p],&[[left+0.12,*z]],j==0);
   f.panels[p].label_at(if j==0{"4.51 MHz"}else{"5.34 MHz"},[left+0.55,*z]);
  }
- f.colorbars.push(Colorbar::new(Rect::new(173.,24.,3.,map_height),sc,r"$\log_{10}(n_e\,/\,\mathrm{m}^{-3})$",vec![8.,8.5,9.,9.5,10.,10.5,11.,11.5,11.7]));f.layout_colorbars()?;
+ f.colorbars.push(Colorbar::new(Rect::new(173.,24.,3.,map_height),sc,r"$\log_{10}(n_e\,/\,\mathrm{m}^{-3})$",(16..=24).map(|i|i as f64/2.).collect()));f.layout_colorbars()?;
  save(&f,"density_enhancement_times")?;
  // Antialiased screen preview, not filtering or resampling of scientific data.
  let raster=image::open("figures/density_enhancement_times.png")?;
