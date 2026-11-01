@@ -40,7 +40,7 @@ fn main()->Result<()>{
  let values=read(&h,"displayed_power")?.iter().map(|v|10.*(1.+100.*v.max(0.)).log10()).collect();
  fig.panels[p].push(Layer::Pcolormesh(Field::new(edges(&x),edges(&y),values,sc)?));
  for (prefix,color) in [("ion","#cbd3df"),("model","#57e0dc")]{
-  let xx=read(&h,&format!("{prefix}_fpe_mhz"))?;let yy=read(&h,&format!("{prefix}_height_km"))?;
+  let xx=read(&h,&format!("{prefix}_plasma_line_mhz"))?;let yy=read(&h,&format!("{prefix}_height_km"))?;
   // Presentation only: expose the ordinary plasma line above 120 km.
   for points in overlay_segments(&xx,&yy,&epoch,[100.,120.]){
    fig.panels[p].push(Layer::Line(Line::new(points,color)));
@@ -54,8 +54,8 @@ fn main()->Result<()>{
  }
  // Inside the quiet lower-right map region; retain the data and existing curve gaps.
  let mut legend=Legend::new(vec![
-  LegendEntry::line("Ion-line plasma frequency", "#cbd3df"),
-  LegendEntry::line("Smooth density model", "#57e0dc")]);
+  LegendEntry::line("Ion-line prediction", "#cbd3df"),
+  LegendEntry::line("Smooth-model prediction", "#57e0dc")]);
  legend.position=LegendPosition::LowerRight;legend.avoid_data=false;
  fig.panels[p].legend=Some(legend);
  if epoch=="1525453430" && !zoom {

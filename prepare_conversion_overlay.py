@@ -1,16 +1,20 @@
-"""Observed plasma-line map with calibrated ion-line and smooth-model fpe.
+"""Observed plasma-line map with magnetized, thermal resonance overlays.
 
 Provenance: archived lp_plot_compare.py motivated the display-only background
 subtraction. Signed bins are mapped to |f| explicitly, avoiding the legacy
-one-bin reversal offset. Thermal/magnetic frequency corrections are NOT added
-to fpe: both overlay curves are sqrt(ne e^2 / epsilon0 me)/(2 pi).
+one-bin reversal offset. The displayed curves solve the real Maxwellian electron dielectric root
+with the IGRF14 field and the upshifted 430 MHz Bragg wavenumber.
 """
 from pathlib import Path
 import argparse
+import datetime
+import hashlib
+import ppigrf
 import h5py
 import numpy as np
 from scipy.constants import e,m_e,epsilon_0
 from scipy.ndimage import uniform_filter,gaussian_filter
+from isr.plasma_line_frequency import profile_hz,dielectric
 from isr.observed_layer import fit_observed_layer,save_profile,scattering_profile
 
 ROOT=Path(__file__).resolve().parent
@@ -34,6 +38,28 @@ def prepare(epoch):
     use=(model_height>=simulation_z[0])&(model_height<=simulation_z[-1])
     model_ne[use]=np.interp(model_height[use],simulation_z,simulation_n)
     fpe=lambda n: np.sqrt(n*e*e/(epsilon_0*m_e))/(2*np.pi*1e6)
+    # Use the same acquisition cycle as the density fit, retaining measured Te.
+    with h5py.File(f['source_path']) as src:
+        zfit=src['height_km'][:]
+        tefit=src['results'][f['source_time_index'],:,1]
+    ion_z=f['source_height_m']/1000
+    ion_te=np.interp(ion_z,zfit,tefit)
+    if not np.isfinite(ion_te).all() or np.any(ion_te<=0):
+        raise ValueError('Invalid fitted electron temperature in overlay')
+    # Same vertical range-as-altitude convention as the density and simulation.
+    date=datetime.datetime.fromtimestamp(time,datetime.timezone.utc).replace(tzinfo=None)
+    coeff=Path(ppigrf.__file__).parent/'IGRF14.shc'
+    magnetic={}
+    for prefix,z,ne,te in [('ion',ion_z,f['source_ne_m3'],ion_te),
+                          ('model',model_height/1000,model_ne,np.full_like(model_ne,300.))]:
+        east,north,up=[v[0]*1e-9 for v in ppigrf.igrf(-66.7528,18.3442,z,date,coeff_fn=str(coeff))]
+        B=np.sqrt(east**2+north**2+up**2)
+        theta=np.rad2deg(np.arccos(np.clip(abs(up)/B,0,1)))
+        resonance=profile_hz(ne,te,B,theta)/1e6
+        residual=np.array([dielectric(fr*1e6,n,t,b,a).real for fr,n,t,b,a in zip(resonance,ne,te,B,theta)])
+        if np.max(abs(residual))>1e-7:raise RuntimeError('Plasma resonance root residual too large')
+        magnetic[prefix]=dict(plasma_line_mhz=resonance,Te_K=te,B_T=B,angle_k_B_deg=theta,
+                              B_east_T=east,B_north_T=north,B_up_T=up,dielectric_real_residual=residual)
     path=ROOT/f'data/conversion_overlay_{epoch}.h5'
     with h5py.File(path,'w') as h:
         for k,v in dict(frequency_mhz=-frequency[fi],height_km=height[zi],
@@ -42,6 +68,8 @@ def prepare(epoch):
             model_height_km=model_height/1000,model_fpe_mhz=fpe(model_ne),
             model_ne_m3=model_ne,simulation_height_m=simulation_z,simulation_ne_m3=simulation_n,
             spline_knots_km=f['knots_km'],spline_coefficients=f['coefficients']).items():h[k]=v
+        for prefix,fields in magnetic.items():
+            for key,value in fields.items():h[f'{prefix}_{key}']=value
         h.attrs.update(plasma_line_time_unix_s=time,ion_line_time_unix_s=f['time_unix_s'],
             ion_line_time_offset_s=f['time_unix_s']-time,
             plasma_line_source=f'evidence/seid_event/results4/spl-{epoch}.h5',
@@ -52,7 +80,11 @@ def prepare(epoch):
             frequency_axis='absolute negative-frequency sideband; physical receiver Doppler sign unverified',
             model=f['model'],model_boundaries='same C2 reservoir continuation as conversion_lab.py; full underlying density model shown outside scattering domain',
             provenance='prepare_conversion_overlay.py; isr/observed_layer.py; plotter/src/bin/conversion_overlay.rs',
-            caveat='fpe overlays are plasma frequency, not predicted warm magnetized thermal spectral peak; time pairing uses nearest ~80.4 s cycle')
+            magnetic_model='IGRF14',igrf_coefficients_sha256=hashlib.sha256(coeff.read_bytes()).hexdigest(),
+            lat_deg=18.3442,lon_deg=-66.7528,radar_frequency_hz=430e6,
+            resonance='Re(1+chi_e)=0; Maxwellian magnetized electrons; k=2*pi*(2*430e6+f)/c; Nicolls et al. 2006',
+            temperatures='ion: fitted Te at density cycle; smooth model: 300 K as in propagation simulation',
+            caveat='Weakly damped real-frequency diagnostic; no ion motion, collision frequency shift or bulk Doppler shift; time pairing uses nearest ~80.4 s cycle')
     print(path, 'time offset',f['time_unix_s']-time,flush=True)
 
 
