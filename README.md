@@ -26,11 +26,17 @@ cargo run --release --locked --manifest-path plotter/Cargo.toml --bin opposite_c
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin coupled
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin coupled_losses
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin gradient_comparison
+cargo run --release --locked --manifest-path plotter/Cargo.toml --bin radar_sensitivity -- reference/coupled/radar_sensitivity.h5
 ```
 
 Figures go to `figures/`. These commands redraw archived results. To rerun
 simulation timesteps, use the commands in [coupled_sim/README.md](coupled_sim/README.md).
 The model includes collisional damping; it does not include Landau damping.
+
+To recompute the angle, polarization, power, and gradient RCS figure, run
+`conda run -n base python coupled_sim/scripts/radar_sensitivity_sweeps.py`.
+Check its grid, integration-window, and power-scaling results with
+`conda run -n base python -m pytest coupled_sim/tests/test_radar_sensitivity.py -q`.
 
 ## Reproduce the density processing
 
