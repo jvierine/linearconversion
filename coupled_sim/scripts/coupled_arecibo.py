@@ -15,6 +15,7 @@ from scipy.interpolate import CubicHermiteSpline
 from scipy.optimize import brentq
 from scipy.sparse import bmat,diags,eye,coo_matrix
 from scipy.sparse.linalg import splu
+from scipy.linalg import solve_banded
 import model_inputs as cold
 
 ROOT=cold.ROOT;REPO=cold.REPO;OUT=ROOT/'output/coupled';OUT.mkdir(exist_ok=True,parents=True)
@@ -25,12 +26,14 @@ P=cold.P
 
 def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,thermal=True,cap=2.,cfl=.4,scenario=None):
     cfg={} if scenario is None else scenario
+    frequency=cfg.get('frequency_hz',F)
+    w=2*np.pi*frequency
     tilt=np.deg2rad(cfg.get('field_angle_deg',P['field_angle_deg']))
     field_azimuth=np.deg2rad(cfg.get('field_azimuth_deg',0.))
     gyro=e*cfg.get('magnetic_t',P['magnetic_t'])/m_e/c*np.array([
         np.sin(tilt)*np.cos(field_azimuth),
         np.sin(tilt)*np.sin(field_azimuth),-np.cos(tilt)])
-    om=W/c;D=W**2*(W**2-np.sum((c*gyro)**2))/(W**2-(c*gyro[2])**2)
+    om=w/c;D=w**2*(w**2-np.sum((c*gyro)**2))/(w**2-(c*gyro[2])**2)
     profile=cfg.get('profile',PROFILE)
     center=cfg.get('center',None)
     if center is None:center=brentq(lambda z:profile(z)*e*e/(m_e*epsilon_0)-D,117000,118100)
@@ -63,9 +66,13 @@ def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,ther
     sph=np.array([z,z,zf,zf,zf,z]);depth=np.maximum((lo+buffer-sph)/buffer,(sph-(hi-buffer))/buffer).clip(0,1)
     sponge=40/buffer*depth**3
     nu=physical_nu+sponge[:3]
-    spp=int(np.ceil(c/F/(cfl*widths.min())));dt=c/F/spp
-    wd=2*np.sin(om*dt/2)/dt;ch=np.cos(om*dt/2);kx=om*np.sin(np.deg2rad(angle))
+    spp=int(np.ceil(c/frequency/(cfl*widths.min())));dt=cfg.get('fixed_dt_m',c/frequency/spp)
+    wd=2*np.sin(om*dt/2)/dt;ch=np.cos(om*dt/2);kx=cfg.get('fixed_kx_m1',om*np.sin(np.deg2rad(angle)))
     i=np.arange(n);S=coo_matrix((np.ones(n),(i,(i+1)%n)),shape=(n,n)).tocsr();I=eye(n,format='csr');Z=I*0
+    if cfg.get('banded_solver',False):
+        # Terminate behind the absorbing buffers instead of joining their
+        # distant endpoints. The interior Yee/fluid operators are unchanged.
+        S=coo_matrix((np.ones(n-1),(i[:-1],i[1:])),shape=(n,n)).tocsr()
     df=diags(1/widths)@(S-I);db=diags(1/dual)@(I-S.T);av=(I+S)/2;ab=diags(1/dual)@av.T@diags(widths)
     cf=bmat([[Z,-df,Z],[df,Z,-1j*kx*I],[Z,1j*kx*I,Z]],format='csr')
     cb=bmat([[Z,-db,Z],[db,Z,-1j*kx*I],[Z,1j*kx*I,Z]],format='csr')
@@ -86,8 +93,17 @@ def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,ther
     Lj=diags((-1j*wd+ch*nu).ravel())-ch*G;Lq=diags(-1j*wd+ch*sponge[0])
     mat=bmat([[Le,-cb,we,None],[cf,Lh,None,None],[-we,None,Lj,-pressure],[None,None,-continuity,Lq]],format='csc')
     source=np.zeros((10*n,2),complex);ii=np.argmin(abs(z-cfg.get('source_z',114850.)));source[ii,0]=1/dual[ii];source[n+ii,1]=1/dual[ii]
-    perm=np.arange(10*n).reshape(10,n).T.ravel();lu=splu(mat[perm,:][:,perm].tocsc(),permc_spec=cfg.get('ordering','NATURAL'))
-    tmp=lu.solve(source[perm]);sol=np.empty_like(tmp);sol[perm]=tmp
+    perm=np.arange(10*n).reshape(10,n).T.ravel()
+    if cfg.get('banded_solver',False):
+        block=mat[perm,:][:,perm].tocoo()
+        lower=int(np.max(block.row-block.col));upper=int(np.max(block.col-block.row))
+        bands=np.zeros((lower+upper+1,10*n),complex)
+        bands[upper+block.row-block.col,block.col]=block.data
+        tmp=solve_banded((lower,upper),bands,source[perm],overwrite_ab=True,check_finite=False)
+    else:
+        lu=splu(mat[perm,:][:,perm].tocsc(),permc_spec=cfg.get('ordering','NATURAL'))
+        tmp=lu.solve(source[perm])
+    sol=np.empty_like(tmp);sol[perm]=tmp
     residual=np.linalg.norm(mat@sol-source)/np.linalg.norm(source)
     # These identities are the spatial discrete energy check, independent of
     # the solution and of the relative size of electric vs thermal energy.

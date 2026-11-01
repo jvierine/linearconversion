@@ -43,27 +43,37 @@ fn main() -> Result<()> {
         ));
     }
     let p = ps[0];
+    let wide = File::open("reference/coupled/radar_angle_wide.h5")?;
+    let angles = rd(&wide, "angle_deg")?;
+    let powers = rd(&wide, "RCS_m2")?;
+    let valid: Vec<_> = angles.iter().zip(&powers).filter(|(_,r)| r.is_finite()).collect();
+    // The shaded outer intervals have no propagating incident channel in
+    // the existing homogeneous lower port, not a computed zero RCS.
+    let cutoff = wide.attr("launch_cutoff_magnitude_deg")?.read_scalar::<f64>()?;
+    let gray = f.scale(Scale::new([0., 1.], Normalization::Linear,
+        ColorMap::new(vec![[0.92,0.92,0.92],[0.92,0.92,0.92]])?)?);
+    for range in [[-80., -cutoff], [cutoff, 80.]] {
+        f.panels[p].push(Layer::Pcolormesh(Field::new(
+            range.to_vec(),vec![-125.,-55.],vec![0.5],gray)?));
+    }
     let mut ax = Axes::new(
-        [-25., 25.],
+        [-80., 80.],
         [-125., -55.],
         r"Incidence angle ($^\circ$)",
         r"RCS (dB m$^2$)",
     );
-    ax.xticks = vec![-20., 0., 20.];
+    ax.xticks = vec![-80., -40., 0., 40., 80.];
     ax.yticks = vec![-120., -100., -80.];
     f.panels[p].axes = Some(ax);
     let model = line(
         &mut f,
         p,
-        &rd(&h, "angle/degrees")?,
-        &rd(&h, "angle/RCS_m2")?
-            .into_iter()
-            .map(db)
-            .collect::<Vec<_>>(),
+        &valid.iter().map(|(a,_)| **a).collect::<Vec<_>>(),
+        &valid.iter().map(|(_,r)| db(**r)).collect::<Vec<_>>(),
         0,
         "Model",
     );
-    let observed = line(&mut f, p, &[-25., 25.], &[obs, obs], 4, "Observed");
+    let observed = line(&mut f, p, &[-80., 80.], &[obs, obs], 4, "Observed");
     f.panels[p].legend = Some(Legend::new(vec![model, observed]));
     let p = ps[1];
     let mut ax = Axes::new(

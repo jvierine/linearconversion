@@ -22,18 +22,33 @@ def metric(states,idx):
     cross=(power([1,1])-x-y)/2+1j*(x+y-power([1,1j]))/2
     return np.array([[x,cross],[cross.conjugate(),y]])
 
-def solve(angle,dz=.005,cap=1.,keep=False):
-    s=a.setup(dz=dz,angle=angle,cap=cap)
-    ref=a.setup(dz=dz,angle=angle,cap=cap,reference=True)
+def solve(angle,dz=.005,cap=1.,keep=False,propagating_only=False):
+    scenario={'banded_solver':True} if propagating_only else None
+    s=a.setup(dz=dz,angle=angle,cap=cap,scenario=scenario)
+    ref=a.setup(dz=dz,angle=angle,cap=cap,reference=True,scenario=scenario)
     z=s['z'];d=z-s['center'];idx=np.argmin(abs(z+s['dz_cells']/2-115100.))
-    Q=metric(ref['initial'],idx);assert np.linalg.eigvalsh(Q).min()>0
+    Q=metric(ref['initial'],idx)
     n=s['initial'][9]*np.sqrt(epsilon_0*s['ne'][0]/(m_e*a.CS**2))[:,None]
     window=np.sin(.5*np.pi*np.clip(np.minimum(d+100,30-d)/10,0,1))**2
     response=np.array([sideband_amplitude(z,n[:,i],a.F,s['kx'],window,reference_range_m=s['center']) for i in range(2)])
-    v=np.linalg.solve(Q,response.conj());v/=np.sqrt(np.vdot(v,Q@v).real)
+    from incident_port import source_basis
+    basis=source_basis(s,ref,idx) if propagating_only else np.eye(2)
+    if basis.shape[1]==1:
+        # Evaluate the admitted channel directly; subtracting large elements
+        # of an ill-conditioned two-source flux metric loses precision near
+        # a cutoff of the excluded channel.
+        v=basis[:,0]
+        admitted=np.einsum('qnp,p->qn',ref['initial'],v)
+        pin=a.electromagnetic_flux(admitted)[idx]
+        assert pin>0
+        v=v/np.sqrt(pin)
+    else:
+        assert np.linalg.eigvalsh(Q).min()>0
+        v=np.linalg.solve(Q,response.conj());v/=np.sqrt(np.vdot(v,Q@v).real)
     power=abs(response@v)**2;flux=TARGET*kb*TSYS/(CAL*TAU*power)
     # Cauchy-Schwarz optimum in the positive incident-flux metric.
-    assert np.isclose(power,np.vdot(response.conj(),np.linalg.solve(Q,response.conj())).real,rtol=1e-10)
+    if basis.shape[1]==2:
+        assert np.isclose(power,np.vdot(response.conj(),np.linalg.solve(Q,response.conj())).real,rtol=1e-10,atol=0)
     state=np.einsum('qnp,p->qn',s['initial'],v);inc=np.einsum('qnp,p->qn',ref['initial'],v)
     assert abs(a.electromagnetic_flux(inc)[idx]-1)<1e-8
     rms=np.linalg.norm(inc[:3,idx])*np.sqrt(flux/2)
