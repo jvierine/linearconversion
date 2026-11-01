@@ -145,3 +145,15 @@ The map compares equal incident vertical HF fluxes below the layer. It is not
 a probability map or an equal-ground-transmitter-power comparison. The rays
 assume horizontal stratification and no earlier ionospheric hop. The HDF5
 product is `reference/coupled/source_location_map.h5`.
+
+## Cross-radar detectability
+
+```sh
+conda run -n base python coupled_sim/scripts/radar_detectability.py
+```
+
+This compares published EISCAT, Millstone Hill, and SYISR hardware at the same
+Arecibo-equivalent cross-section, range, and spectral window. Inputs, source
+links, SNRs, and an explicit averaging criterion are in
+`data/radar_detectability.h5`. It is a hardware-sensitivity benchmark, not a
+new prediction of beam-filled plasma-wave scattering at each radar frequency.
