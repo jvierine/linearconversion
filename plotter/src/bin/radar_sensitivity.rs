@@ -76,7 +76,12 @@ fn main() -> Result<()> {
         label.leader = Some([22. + (angle + 25.) / 50. * 60., 44.]);
         f.labels.push(label);
     }
-    f.labels.push(Label::new("Spitze", 52., 31.));
+    let mut upward = Label::new("Spitze", 37., 3.);
+    upward.leader = Some([22. + (25. - spitze) / 50. * 60., 8.]);
+    f.labels.push(upward);
+    let mut downward = Label::new("Downward", 66., 3.);
+    downward.leader = Some([22. + (25. + spitze) / 50. * 60., 8.]);
+    f.labels.push(downward);
     let p = ps[1];
     let mut ax = Axes::new(
         [0., 90.],
