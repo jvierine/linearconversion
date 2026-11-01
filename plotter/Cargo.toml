@@ -1,0 +1,10 @@
+[package]
+name = "isr-figures"
+version = "0.1.0"
+edition = "2024"
+default-run = "isr-figures"
+[dependencies]
+anyhow = "1"
+rustplotlib = { git = "https://github.com/jvierine/rustplotlib.git", rev = "141490cdfb98fc5e38db8b4c6d84c56ae9aab05c" }
+hdf5 = { package = "hdf5-metno", version = "0.12" }
+image = { version = "0.25", default-features = false, features = ["png"] }

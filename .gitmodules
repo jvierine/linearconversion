@@ -1,0 +1,3 @@
+[submodule "isr_spec_validation"]
+	path = isr_spec_validation
+	url = https://github.com/jvierine/isr_spec_validation.git

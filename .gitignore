@@ -1,0 +1,17 @@
+**/target/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.log
+figures/
+output/
+coupled_sim/output/
+*.partial.h5
+.DS_Store
+
+# Versioned release assets, downloaded with scripts/fetch_data.py
+/data/plasma_line_rcs_inputs.h5
+/data/eregion_fit/full_altitude_fits.h5
+/data/eregion_fit/all_de_inputs.h5
+
+.latex-cache/
