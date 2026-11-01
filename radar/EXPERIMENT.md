@@ -11,7 +11,7 @@
 | Modulation | Pseudorandom phase coding | Experimenter recollection; measured-waveform decoder is compatible |
 | Bit duration | Assumed 2 microseconds for both modes | Experimenter recollection, not independently recovered from metadata |
 | Code length | 22 / 220 bits if 2-microsecond bits | Pulse duration divided by assumed bit duration |
-| Feed | Believed to be 430 MHz line feed | Experimenter recollection, not independently confirmed |
+| Feed | 430 MHz Gregorian feed | Identified by the experimenter on 1 November 2026 after checking the September 2017 destruction of the line feed; archived receiver channel is named `gr` |
 
 The decoder uses recorded transmit leakage, not an explicit sequence of bits.
 `lpi_fft_mpi_clp.py` decimates 25 MHz voltages to 1 MHz, forms transmit and
@@ -40,3 +40,5 @@ commensal D-region measurements. It does not specify baud duration or feed.
 
 Snapshot retrieved from Seid on 1 November 2026; file hashes are retained in
 `provenance.h5`. The original scripts have not been modernized or silently corrected.
+
+Observatory damage report: https://researchinfrastructureoutreach.com/wp-content/uploads/2018/05/ImpactsHurricaneMaria.pdf
