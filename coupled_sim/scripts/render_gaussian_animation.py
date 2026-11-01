@@ -47,7 +47,7 @@ def main():
     locations.append((zz,np.exp(1j*kx*xx)))
    output_case=args.stem or ('phase_resolved' if args.phase else case)
    dest=MEDIA/(f'{args.stem}.mp4' if args.stem else f'gaussian_10us_{output_case}.mp4')
-   cmd=['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s','1920x1080','-r','30','-i','-','-an','-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
+   cmd=['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s','1920x1080','-r','30','-i','-','-an','-c:v','libx264','-preset','fast','-threads','3','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
    proc=None if args.preview else subprocess.Popen(cmd,stdin=subprocess.PIPE)
    peak=int(np.argmax(np.max(abs(arrays[1]),axis=1)))
    poster=int(np.argmin(abs(times-80e-6))) if case in ['overview','flux'] else peak
@@ -79,7 +79,7 @@ def main():
      else:
       label='Bottomside close-up' if view=='closeup' else 'Downward wave path'
       draw.text((box[0]+10,box[1]+10),label,font=FONT,fill='black',stroke_width=1,stroke_fill='white')
-    note=h.attrs.get('display_note') or ('Carrier phase resolved; time is physical' if args.phase else 'Cycle-averaged energy flux; positive upward' if case=='flux' else 'Carrier shown stroboscopically; time is physical')
+    note='Cycle-averaged energy flux; positive upward; actual time displayed' if case=='flux' else h.attrs.get('display_note') or ('Carrier phase resolved; time is physical' if args.phase else 'Carrier shown stroboscopically; time is physical')
     draw.text((960,1078),note,font=ImageFont.truetype('/System/Library/Fonts/Supplemental/Times New Roman.ttf',21),fill=(60,60,60),anchor='mb')
     if proc is not None:proc.stdin.write(image.tobytes())
     if frame in [0,peak,poster,len(times)-1]:image.save(OUT/f'{case}_{frame:04d}.png')

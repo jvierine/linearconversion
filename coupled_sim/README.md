@@ -476,3 +476,18 @@ overview --input output/gaussian_pulse/startup_movie.h5 --stem continuous_startu
 for the switch-on movie. Its source rises around 60 µs; the background density
 and static magnetic field are present throughout. Long-duration carrier motion
 is stroboscopic; the separate steady article movie resolves every cycle.
+
+`media/conversion/continuous_all_views.mp4` cycles through five two-panel views:
+whole-layer field/density, local field/density, vertical energy fluxes,
+horizontal/vertical currents, and the article's resolved steady-state phase.
+The first four views replay the same causal switch-on calculation. Their time
+counter restarts for each replay; the last view uses a separate phase clock.
+Chapter markers identify each view. Build it after the startup and steady
+movies with:
+
+```sh
+for view in fields flux current; do
+  conda run -n base python coupled_sim/scripts/render_gaussian_animation.py --cases "$view" --input output/gaussian_pulse/startup_movie.h5 --stem "continuous_startup_$view"
+done
+conda run -n base python coupled_sim/scripts/combine_continuous_views.py
+```
