@@ -27,6 +27,7 @@ cargo run --release --locked --manifest-path plotter/Cargo.toml --bin coupled
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin coupled_losses
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin gradient_comparison
 cargo run --release --locked --manifest-path plotter/Cargo.toml --bin radar_sensitivity -- reference/coupled/radar_sensitivity.h5
+cargo run --release --locked --manifest-path plotter/Cargo.toml --bin es_fregion_electric_field
 ```
 
 Figures go to `figures/`. These commands redraw archived results. To rerun
@@ -37,6 +38,20 @@ To recompute the angle, polarization, power, and gradient RCS figure, run
 `conda run -n base python coupled_sim/scripts/radar_sensitivity_sweeps.py`.
 Check its grid, integration-window, and power-scaling results with
 `conda run -n base python -m pytest coupled_sim/tests/test_radar_sensitivity.py -q`.
+
+To recompute the measured sporadic-E/F-region field comparison and the two
+signed Spitze-window power budgets:
+
+```sh
+conda run -n base python coupled_sim/scripts/es_fregion_electric_field.py
+conda run -n base python coupled_sim/scripts/spitze_transmission.py
+conda run -n base python -m pytest coupled_sim/tests/test_es_fregion_electric_field.py coupled_sim/tests/test_spitze_transmission.py -q
+```
+
+Compact HDF5 results are in `reference/coupled/`; reruns retain the complete
+field arrays in `coupled_sim/output/coupled/`. Positive incidence follows the
+horizontal component of the downward geomagnetic field; the upward radio
+window is at negative incidence in this coordinate convention.
 
 ## Reproduce the density processing
 
