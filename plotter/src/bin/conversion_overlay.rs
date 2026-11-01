@@ -200,11 +200,16 @@ fn main() -> Result<()> {
         }
     }
     if article {
+        // Label the ordinary upper-altitude trace from the quiet low-frequency side.
+        for (text, height) in [("Photoelectron-", 127.2), ("enhanced", 125.8), ("plasma line", 124.4)] {
+            fig.panels[p].label_at(text, [2.85, height]).color = "#ffffff".into();
+        }
         // Point to the user-identified ambiguity replicas, including the narrow
         // frequency-offset peaks at the layer height; leave the true peaks alone.
         let text = fig.panels[p].label_at("Doppler sidelobes", [5.05, 127.3]);
         text.color = "#ffffff".into();
         for (start, end) in [
+            ([3.1, 123.2], [3.80859375, 124.05]),
             ([4.35, 126.2], [4.3335, 117.8]),
             ([4.75, 126.2], [4.8340, 117.8]),
             ([5.15, 126.2], [5.30, 121.4]),
@@ -270,7 +275,12 @@ fn main() -> Result<()> {
                 &format!("1525453430/{name}/frequency_magnitude_mhz"),
             )?;
             let yy = read(&spectrum, &format!("1525453430/{name}/signed_excess_snr"))?;
-            fig.panels[q].plot(xx.into_iter().zip(yy).map(|(x, y)| [x, y]).collect(), label);
+            let sigma = read(&spectrum, &format!("1525453430/{name}/snr_sampling_sigma"))?;
+            let points: Vec<_> = xx.iter().zip(&yy).map(|(&x, &y)| [x, y]).collect();
+            let bounds: Vec<_> = yy.iter().zip(&sigma).map(|(&y, &s)| [y-s, y+s]).collect();
+            fig.panels[q].plot(points.clone(), label);
+            let color = if name == "enhanced" { "#0072b2" } else { "#d55e00" };
+            fig.panels[q].errorbars(&points, None, Some(&bounds), color, 0.7, 3., 1.)?;
         }
         // Protect the curves and annotations when placing the map key.
         fig.panels[p].legend.as_mut().unwrap().avoid_layers =
