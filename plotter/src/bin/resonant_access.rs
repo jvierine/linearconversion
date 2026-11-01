@@ -143,6 +143,26 @@ fn main() -> Result<()> {
     for (y, index) in [(0., 3), (critical, 4)] {
         series(&mut f, zoom, &[-30., 10.], &[y, y], index, "");
     }
+    // Incident O-ray polarization at its upward resonance crossing.
+    let polarization = File::open("data/resonant_access_polarization.h5")?;
+    let anchor = rd(&polarization, "anchor_xz_m")?;
+    let direction = rd(&polarization, "unit_projection_xz")?;
+    let tip = [anchor[0] + 7.5 * direction[0], anchor[1] + 7.5 * direction[1]];
+    let mut electric = Line::series(vec![[anchor[0], anchor[1]], tip], 2);
+    electric.dash = None;
+    electric.width_pt = 1.3;
+    f.panels[zoom].push(Layer::Line(electric));
+    let (sx, sy) = (24. / 40., 21. / 26.);
+    let (dx, dy) = ((tip[0] - anchor[0]) * sx, (tip[1] - anchor[1]) * sy);
+    let norm = dx.hypot(dy);
+    let (ux, uy) = (dx / norm, dy / norm);
+    let left = [tip[0] - (1.3 * ux + 0.65 * uy) / sx, tip[1] - (1.3 * uy - 0.65 * ux) / sy];
+    let right = [tip[0] - (1.3 * ux - 0.65 * uy) / sx, tip[1] - (1.3 * uy + 0.65 * ux) / sy];
+    let mut head = Line::series(vec![left, tip, right], 2);
+    head.dash = None;
+    head.width_pt = 1.3;
+    f.panels[zoom].push(Layer::Line(head));
+    f.panels[zoom].label_at(r"$\mathbf E$", [-24., 9.]);
     // Leader links the actual turning point to the inset without covering B0.
     let mut leader = Line::new(vec![[5., critical + 4.], [600., 40.], [600., -60.]], "#777777");
     leader.width_pt = 0.6;
