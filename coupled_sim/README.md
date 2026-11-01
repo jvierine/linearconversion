@@ -402,3 +402,36 @@ with its discrete driven solution to better than 1e-7; Gauss's law, outgoing
 phase/pressure direction, wavelength contraction and collisional decay are
 checked independently in the saved fields. Compact recordings, the angle scan
 and check results are in `reference/coupled/conversion_animation/`.
+
+## Wide incidence scan and Gaussian pulse
+
+`conda run -n base python coupled_sim/scripts/wide_radar_angle_sweep.py`
+extends the magnetic-meridian scan to ±80°. Polarization optimization admits
+only propagating incoming modes. Beyond about ±54.2°, neither mode propagates
+at this model's homogeneous lower port (plasma frequency 3.313 MHz). Those
+angles are recorded as unavailable, not zero RCS. This is a boundary-access
+limit for this background, not a universal incidence cutoff.
+
+A 5.34 MHz Gaussian source pulse uses a 10 µs electric-field-envelope FWHM
+and the radar-optimal carrier incidence/polarization. Its transient is obtained
+by inverse Fourier synthesis of the frequency response of the same discrete
+coupled Yee/fluid recurrence, with fixed grid, timestep, and horizontal
+wavenumber. Each spectral component is solved independently; a moving envelope
+is not imposed on a single continuous-wave solution. Electron-ion and
+electron-neutral damping are included; Landau damping is not.
+
+```sh
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/gaussian_pulse.py --dz .002
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/validate_gaussian_pulse.py --dz .002
+OPENBLAS_NUM_THREADS=1 conda run -n base python coupled_sim/scripts/prepare_gaussian_animation.py --dz .002
+conda run -n base python coupled_sim/scripts/render_gaussian_animation.py
+conda run -n base python coupled_sim/scripts/combine_gaussian_probes.py
+```
+
+The single `media/conversion/gaussian_10us_probes.mp4` cycles through three
+two-panel views: whole-layer electric field and bottomside density close-up,
+vertical electromagnetic and plasma-wave energy fluxes, then horizontal and
+vertical current. Each view replays the same pulse through 3 ms. Fluxes are carrier-cycle averages, positive
+upward. The phase plots use stroboscopic carrier sampling, with the actual
+physical time displayed. All color scales are fixed throughout a movie.
+HDF5 arrays and numerical checks are retained under `output/gaussian_pulse/`.
