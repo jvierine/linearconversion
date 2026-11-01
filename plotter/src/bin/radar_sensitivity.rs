@@ -93,6 +93,34 @@ fn main() -> Result<()> {
     ] {
         f.panels[p].push(Layer::Line(Line::new(points, "#ffffff")));
     }
+    // O/X coordinates are derived from saved incident cold eigenvectors.
+    // The complete edge is a single linear state: phase is undefined there.
+    let pol = File::open("data/polarization_annotations.h5")?;
+    let ordinary = rd(&pol, "O")?;
+    let extraordinary = rd(&pol, "X")?;
+    let xy = |a: f64, phase: f64| [112. + a / 90. * 60., 8. + (180. - phase) / 360. * 44.];
+    for (point, text, position) in [
+        ([ordinary[0], ordinary[1]], "O", [126., 15.]),
+        ([extraordinary[0], extraordinary[1]], "X", [161., 45.]),
+        ([45., 0.], r"$+45^\circ$ linear", [142., 35.5]),
+        ([0., 0.], r"$E_x$ linear", [123., 26.]),
+        ([90., 0.], r"$E_y$ linear", [161., 26.]),
+    ] {
+        let anchor = xy(point[0], point[1]);
+        if point[0] > 0. && point[0] < 90. {
+            let circle = (0..=48).map(|i| {
+                let a = i as f64 * std::f64::consts::TAU / 48.;
+                [point[0] + 1.0 * a.cos(), point[1] + 5.5 * a.sin()]
+            }).collect();
+            f.panels[p].push(Layer::Line(Line::new(circle, "#171717")));
+        }
+        let mut label = Label::new(text, position[0], position[1]);
+        label.leader = Some(anchor);
+        f.labels.push(label);
+    }
+    let mut optimum_label = Label::new("Optimum", 160., 14.);
+    optimum_label.leader = Some(xy(opt[0], opt[1]));
+    f.labels.push(optimum_label);
     let mut cb = Colorbar::new(
         Rect::new(112., 70., 60., 2.5),
         sc,
