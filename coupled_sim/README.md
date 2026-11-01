@@ -252,3 +252,14 @@ switch-on or growth simulation. `reference/coupled/minimum_incident.h5`
 retains the solved fields and density covering the radar-response window.
 Validate the saved solution with
 `conda run -n base python coupled_sim/scripts/check_minimum_incident.py`.
+
+The current optimum's HF power budget and incident-ray access are checked by
+`conda run -n base python coupled_sim/scripts/resonant_access_audit.py` after
+running the minimum-incident-power calculation. It writes
+`coupled_sim/reference/resonant_access_audit.h5`. The 14-degree optimum absorbs
+77.5% and reflects 22.5%; the older 16.75-degree reference absorbs 99.6%.
+These are different illuminations. Cold local rays diagnose the turning heights;
+they do not supply mode-conversion efficiencies or amplitudes. The full-wave
+solution supplies the fields and energy budget. The `resonant_access` Rust
+plotter renders this diagnostic. The independent local-dispersion checks run
+with `conda run -n base python -m pytest coupled_sim/tests/test_resonant_access.py`.
