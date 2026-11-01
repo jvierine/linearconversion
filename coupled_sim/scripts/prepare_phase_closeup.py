@@ -7,7 +7,7 @@ with h5py.File(OUT/'movie.h5') as movie:
     begin,end=movie['views/closeup'][:]
     tpeak=movie['time_s'][int(np.argmax(np.max(abs(movie['density'][:,begin:end]),axis=1)))]
     zclose=movie['height_m'][begin:end]
-with h5py.File(OUT/'response_dz0.002.h5') as h:
+with h5py.File(OUT/'response_dz0.002_z60.h5') as h:
     meta=dict(h.attrs);z=h['height_m'][:];bo=slice(*h['views/bottomside'][:])
     indices=np.arange(len(z))[bo][(z[bo]>=zclose.min()-1e-8)&(z[bo]<=zclose.max()+1e-8)]
     assert len(indices)==len(zclose)

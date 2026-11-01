@@ -19,11 +19,12 @@ def rounded(value):
  return np.ceil(value/exponent)*exponent
 
 def main():
- parser=argparse.ArgumentParser();parser.add_argument("--preview",action="store_true");parser.add_argument('--phase',action='store_true');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument("--preview",action="store_true");parser.add_argument('--phase',action='store_true');parser.add_argument('--cases',default='overview,fields,flux,current');args=parser.parse_args()
  subprocess.run(['cargo','build','--release','--locked','--manifest-path',str(ROOT/'plotter/Cargo.toml'),'--bin','gaussian_movie_background'],check=True)
  with h5py.File(OUT/('phase_movie.h5' if args.phase else 'movie.h5')) as h:
   times=h['time_s'][:];angle=float(h.attrs['angle_deg']);f0=h.attrs['carrier_hz'];kx=h.attrs['kx_m1'];bottom=h.attrs['bottom_resonance_m'];top=h.attrs['top_resonance_m'];zall=h['height_m'][:]
   for case,panels in CASES.items():
+   if case not in args.cases.split(','):continue
    if args.phase and case!='fields':continue
    arrays=[];maxima=[];zs=[]
    for name,view,unit in panels:
@@ -40,6 +41,7 @@ def main():
     height=box[3]-box[1];width=box[2]-box[0]
     if view=='overview':zz=np.linspace(120800,115100,height)
     elif view=='wave_path':zz=bottom+np.linspace(40,-160,height)
+    elif panels[j][0]=='density':zz=bottom+np.linspace(50,-50,4*height)
     else:zz=bottom+np.linspace(20,-20,height)
     xx=np.linspace(-100,100,width)
     locations.append((zz,np.exp(1j*kx*xx)))
@@ -59,7 +61,11 @@ def main():
      stretch=300 if view=='overview' else 30
      normalized=.5+.5*np.arcsinh(values/(maxima[j]/stretch))/np.arcsinh(stretch)
      raster=palettes[j][np.rint(np.clip(normalized,0,1)*65535).astype(np.uint16)]
-     image.paste(Image.fromarray(raster),boxes[j][:2]);patchbox,patch=patches[j];image.paste(patch,patchbox[:2])
+     field_image=Image.fromarray(raster)
+     if name=='density':
+      # Supersample the wider density view so unresolved vertical waves do not alias.
+      box=boxes[j];field_image=field_image.resize((box[2]-box[0],box[3]-box[1]),Image.Resampling.LANCZOS)
+     image.paste(field_image,boxes[j][:2]);patchbox,patch=patches[j];image.paste(patch,patchbox[:2])
     draw=ImageDraw.Draw(image)
     draw.text((960,5),f'5.34 MHz   |   10 μs envelope   |   {angle:.2f}° incidence   |   t = {t*1e6:.2f} μs',font=FONT,fill='black',anchor='mt')
     for j,(_,view,_) in enumerate(panels):

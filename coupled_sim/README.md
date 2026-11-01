@@ -430,7 +430,8 @@ conda run -n base python coupled_sim/scripts/combine_gaussian_probes.py
 
 The single `media/conversion/gaussian_10us_probes.mp4` cycles through three
 two-panel views: whole-layer electric field and bottomside density close-up
-(−20 to +20 m from the carrier resonance),
+(−50 to +50 m from the carrier resonance; local electric-field and current
+views retain −20 to +20 m),
 vertical electromagnetic and plasma-wave energy fluxes, then horizontal and
 vertical current. Each view replays the same pulse through 3 ms. Fluxes are carrier-cycle averages, positive
 upward. The phase plots use stroboscopic carrier sampling, with the actual

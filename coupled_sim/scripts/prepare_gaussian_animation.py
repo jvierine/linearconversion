@@ -8,14 +8,14 @@ ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'output/gaussian_pulse'
 
 def main():
  parser=argparse.ArgumentParser();parser.add_argument("--dz",type=float,default=.002);dz=parser.parse_args().dz
- with h5py.File(OUT/f'response_dz{dz:g}.h5') as h:
+ with h5py.File(OUT/f'response_dz{dz:g}_z60.h5') as h:
   assert h.attrs['complete']
   meta=dict(h.attrs);df=float(meta['frequency_spacing_hz']);f0=float(meta['carrier_hz']);period=1/df
   z=h['height_m'][:];ne=h['ne_m3'][:]
   ov=slice(*h['views/overview'][:]);bo=slice(*h['views/bottomside'][:])
-  indices=np.r_[np.arange(len(z))[ov],np.arange(len(z))[bo][(z[bo]-meta['bottom_resonance_m']>=-20)&(z[bo]-meta['bottom_resonance_m']<=20)],np.arange(len(z))[bo][::20]]
+  indices=np.r_[np.arange(len(z))[ov],np.arange(len(z))[bo][(z[bo]-meta['bottom_resonance_m']>=-50)&(z[bo]-meta['bottom_resonance_m']<=50)],np.arange(len(z))[bo][::20]]
   selected_z=z[indices];selected_ne=ne[indices]
-  n_overview=ov.stop-ov.start;n_close=np.sum((z[bo]-meta['bottom_resonance_m']>=-20)&(z[bo]-meta['bottom_resonance_m']<=20))
+  n_overview=ov.stop-ov.start;n_close=np.sum((z[bo]-meta['bottom_resonance_m']>=-50)&(z[bo]-meta['bottom_resonance_m']<=50))
   offsets=np.arange(-160000.,160000.+df/2,df)
   spectrum=np.stack([h[f'response/{freq:+.3f}'][:][:,indices] for freq in offsets])
  # Each step advances the actual carrier phase by 1/24 cycle modulo whole

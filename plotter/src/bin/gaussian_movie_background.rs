@@ -14,10 +14,10 @@ fn main()->Result<()> {
   let p=ps[j];let x=if j==0 {25.} else {224.};
   f.panels[p].rect=Rect::new(x,12.,170.,194.);
   let overview=(case=="overview"||case=="flux")&&j==0;
-  let yr=if overview {[115.1,120.8]} else if case=="flux" {[-160.,40.]} else {[-20.,20.]};
+  let yr=if overview {[115.1,120.8]} else if case=="flux" {[-160.,40.]} else if (case=="overview"||case=="fields")&&j==1 {[-50.,50.]} else {[-20.,20.]};
   let mut ax=Axes::new([-100.,100.],yr,"Horizontal distance (m)",if overview {"Altitude (km)"} else {"Height from carrier resonance (m)"});
   ax.xticks=vec![-100.,-50.,0.,50.,100.];
-  ax.yticks=if overview {vec![116.,117.,118.,119.,120.]} else if case=="flux" {vec![-150.,-100.,-50.,0.]} else {vec![-20.,-10.,0.,10.,20.]};
+  ax.yticks=if overview {vec![116.,117.,118.,119.,120.]} else if case=="flux" {vec![-150.,-100.,-50.,0.]} else if (case=="overview"||case=="fields")&&j==1 {vec![-50.,-25.,0.,25.,50.]} else {vec![-20.,-10.,0.,10.,20.]};
   f.panels[p].axes=Some(ax);
   let unsigned=false;
   let norm=Normalization::Asinh{width:maxima[j]/if overview {300.} else {30.}};

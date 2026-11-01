@@ -31,7 +31,7 @@ def frequency_response(offset):
     return offset,np.asarray(sampled,dtype='complex64'),s['harmonic_residual']
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--df',type=float,default=250.);p.add_argument('--dz',type=float,default=.002);p.add_argument('--workers',type=int,default=4);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--df',type=float,default=250.);p.add_argument('--dz',type=float,default=.002);p.add_argument('--workers',type=int,default=4);p.add_argument('--bottomside-max',type=float,default=60.);args=p.parse_args()
     with h5py.File(ROOT/'reference/coupled/minimum_incident.h5') as h:
         angle=float(h.attrs['angle_deg']);power=float(h.attrs['incident_vertical_flux_W_m2']);pol=h['source_polarization'][:]
     f0=5.34e6;omega=2*np.pi*f0;gyro=e*a.P['magnetic_t']/m_e
@@ -48,18 +48,20 @@ def main():
     pol*=np.sqrt(power/a.electromagnetic_flux(incident)[idx])
     z=base['z'];zf=z+base['dz_cells']/2
     displays={'overview':np.arange(115100.,120800.1,2.),
-              'bottomside':bottom+np.arange(-160.,40.001,.025),
+              'bottomside':bottom+np.arange(-160.,args.bottomside_max+.001,.025),
               'topside':top+np.arange(-40.,160.001,.025)}
     allz=np.concatenate(list(displays.values()))
     sigma=10e-6/(2*np.sqrt(2*np.log(2)));t0=60e-6
-    path=OUT/f'response_dz{args.dz:g}.h5'
+    path=OUT/f'response_dz{args.dz:g}_z{args.bottomside_max:g}.h5'
     with h5py.File(path,'a') as h:
         h.attrs.update(carrier_hz=f0,angle_deg=angle,field_envelope_FWHM_s=10e-6,source_peak_time_s=t0,
             peak_incident_vertical_flux_W_m2=power,kx_m1=base['kx'],dt_s=base['dt']/c,
-            bottom_resonance_m=bottom,top_resonance_m=top,dz_m=args.dz,
+            bottom_resonance_m=bottom,top_resonance_m=top,dz_m=args.dz,bottomside_max_m=args.bottomside_max,
             method='Broadband inverse Fourier response of the coupled discrete Yee/electron-fluid recurrence; fixed kx and source polarization; not a modulated CW movie',
             model='Linear fluid pressure, electron-ion and electron-neutral collisions, fixed ions; no kinetic Landau damping',
             fields='Ex Ey Ez cBx cBy cBz normalized_jx normalized_jy normalized_jz normalized_density; interpolated onto common heights')
+        if 'height_m' in h:
+            assert np.array_equal(h['height_m'][:], allz), 'Cache height grid differs; choose a new cache file'
         if 'height_m' not in h:
             h['height_m']=allz;h['ne_m3']=np.interp(allz,z,base['ne'][0]);h['source_polarization']=pol
             offset=0
