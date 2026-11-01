@@ -280,3 +280,36 @@ the event control restores B and collisions. Native Rust recordings start
 from CW equilibrium, not switch-on. WKB field-magnitude errors are for the
 scalar control only, not magnetized mode-conversion or finite-beam ray errors.
 The HDF5 report includes mesh checks, executable hash and the complete driver.
+
+## Where the HF power is absorbed
+
+From the repository root:
+
+```sh
+conda run -n base python coupled_sim/scripts/hf_absorption_profile.py
+cargo run --release --locked --manifest-path plotter/Cargo.toml --bin hf_absorption_profile
+conda run -n base python -m pytest coupled_sim/tests/test_hf_absorption_profile.py -q
+```
+
+The fixed-background FDTD calculation integrates physical collisional heating
+and independently measures `1-R-T` at the outer electromagnetic ports.
+Numerical absorbing buffers are excluded. The cumulative curve is deposition
+below each altitude, including incident and reflected fields; it is not a
+one-way attenuation curve. O/X illumination matches the local collisional
+mode polarization at the lower homogeneous reference plane.
+
+For the observed profile, O-mode absorption is 8.0% at normal incidence,
+76.3% at 13.956 degrees, and 13.3% at 25 degrees; X-mode absorption at
+13.956 degrees is 11.2%. Angles are vacuum-equivalent angles from vertical.
+The earlier optimized-polarization case absorbs 77.5%. At 13.956 degrees,
+71.1% of incident O-mode power is deposited within 30 m of resonance.
+Halving/doubling collisions gives 75.3%/78.1% O-mode absorption: the resonant
+field strengthens/narrows as damping decreases. This is cold-plasma
+collisional resonance absorption, not a demonstrated additional warm-fluid
+or Landau loss. See Gondarenko et al. (2009), doi:10.1029/2009GL038379.
+
+The native FDTD recurrence was checked separately by `fdtd_ray_benchmark.py`.
+These profiles are its harmonic steady-state solutions. Heating and port loss
+close within 0.03 percentage point for all tested illuminations; the residual
+includes finite-port incident/reflected interference and discretization.
+Results and source provenance are in `reference/coupled/hf_absorption_profile.h5`.
