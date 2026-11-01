@@ -95,7 +95,7 @@ fn main() -> Result<()> {
     let sc = f.scale(Scale::new(
         [-125., -75.],
         Normalization::Linear,
-        ColorMap::ember(),
+        ColorMap::turbo(),
     )?);
     f.panels[p].push(Layer::Pcolormesh(Field::new(
         edges(&rd(&h, "polarization/amplitude_angle_deg")?),
