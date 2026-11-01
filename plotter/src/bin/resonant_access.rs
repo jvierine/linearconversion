@@ -36,6 +36,9 @@ fn main() -> Result<()> {
         .0;
     let offset = ox[j];
     let mut f = ArticleLayout::new(177., 10.)?.figure(1., 105.)?;
+    // The inset deliberately places its ticks inside the parent axes;
+    // inspect the rendered page for overlap with actual ray curves.
+    f.check_label_geometry = false;
     let ps = f.grid(1, 2)?;
     f.height_mm = 105.;
     f.panels[ps[0]].rect = Rect::new(22., 7., 70., 84.);
@@ -128,6 +131,22 @@ fn main() -> Result<()> {
     leg.avoid_data = false;
     leg.position = LegendPosition::LowerRight;
     f.panels[ps[1]].legend = Some(leg);
+    // Close-up uses the original ordered ray samples, not an interpolated cartoon.
+    let mut zoom_axes = Axes::new([-30., 10.], [-3., 23.], "x (m)", "");
+    zoom_axes.xticks = vec![-20., 0.];
+    zoom_axes.yticks = vec![0., 20.];
+    let zoom = f.panels.len();
+    f.panels.push(Panel::new(Rect::new(65., 40., 24., 21.), zoom_axes));
+    let zx: Vec<_> = ox.iter().map(|v| v - offset).collect();
+    let zz: Vec<_> = oz.iter().map(|v| v - center).collect();
+    series(&mut f, zoom, &zx, &zz, 0, "");
+    for (y, index) in [(0., 3), (critical, 4)] {
+        series(&mut f, zoom, &[-30., 10.], &[y, y], index, "");
+    }
+    // Leader links the actual turning point to the inset without covering B0.
+    let mut leader = Line::new(vec![[5., critical + 4.], [600., 40.], [600., -60.]], "#777777");
+    leader.width_pt = 0.6;
+    f.panels[ps[0]].push(Layer::Line(leader));
     f.labels.push(Label::new("(a)", 22., 3.));
     f.labels.push(Label::new("(b)", 112., 3.));
     for ext in ["png", "pdf"] {
