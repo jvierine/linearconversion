@@ -6,6 +6,7 @@
 use arecibo_fluid::ten_moment::{self as tm, PAIRS};
 use meteor_fdtd::stratified::maxwell_rhs_xz;
 use serde::{Deserialize, Serialize};
+pub mod scalar;
 pub type Cell = [f64; 16];
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Config {

@@ -1,4 +1,53 @@
-# Nonlinear electron-fluid / Maxwell model
+# Total-density scalar model and tensor comparison
+
+The simple total-density model is `src/scalar.rs`. It evolves **total** electron
+density and momentum `[n_e, n_e u_x, n_e u_y, n_e u_z]`, coupled to all Maxwell
+field components. No pressure tensor is evolved. The equations are
+
+\[
+\partial_t n_e+\nabla\cdot(n_e\mathbf u)=0,\qquad\mathbf J=-en_e\mathbf u,
+\]
+\[
+(\partial_t+\mathbf u\cdot\nabla)\mathbf u
+=-\frac{e}{m_e}[\mathbf E_1+\mathbf u\times(\mathbf B_0+\mathbf B_1)]
+-c_e^2\nabla\ln(n_e/n_{\rm eq})-\nu\mathbf u,
+\qquad c_e^2=3k_BT_{\rm ref}/m_e.
+\]
+
+This is the nonlinear barotropic continuation of the paper's effective scalar
+closure, not a nonlinear adiabatic temperature model. The effective pressure is
+`p_eff=m_e c_e^2 n_e`, with constant `T_ref=300 K`. A fixed equilibrium electric
+field supports the background gradient. The conservative implementation subtracts
+equilibrium fluxes and forces before differentiation, so the layer remains
+stationary without a wave. It stores total density; density differences are
+computed only where needed for equilibrium subtraction or diagnostics. Physical
+pressure anisotropy, temperature evolution and Landau damping remain absent.
+
+From this repository root:
+
+```sh
+cargo build --release --manifest-path nonlinear_sim/Cargo.toml --bin scalar_total
+cargo test --release --manifest-path nonlinear_sim/Cargo.toml --test scalar_total
+conda run -n base python nonlinear_sim/scripts/run_scalar_total.py --label scalar_total
+conda run -n base python nonlinear_sim/scripts/run_scalar_total.py --linear --label scalar_total_linear
+```
+
+`output/scalar_total.h5` contains `electron_density_m3[time,x,z]`, the equilibrium
+density, ion density, positions, all evolved fields and momenta, and the initial
+scalar harmonic solution. In this file, state entry zero is total density, not
+a perturbation. The input harmonic solution is a weak-wave initial condition;
+it does not prescribe the later nonlinear evolution.
+
+Three tests verify stationary nonuniform equilibrium, Bohm--Gross dispersion
+with charge conservation, and quadratic departure from the linear limit. On the
+Arecibo profile, a one-period run starting at peak fractional amplitude 1e-4
+differs from its matching linear calculation by 1.58e-6 of the density-wave
+L2 amplitude over 117.930--117.960 km. Compact results are saved in
+`reference/scalar_total_check.h5`. This is a one-grid, one-period consistency
+check, not spatial convergence of the event RCS or a nonlinear steady state.
+The paper's existing validated linear results remain the quantitative reference.
+
+## Tensor comparison model
 
 This model evolves electron density, momentum, the full symmetric pressure tensor,
 and all six electromagnetic field components on a real horizontal–vertical grid.

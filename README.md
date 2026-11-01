@@ -8,6 +8,7 @@ plasma-line analysis, scientific figures, and the coupled Maxwell–electron-flu
   Debye correction, plasma-line deconvolution and radar cross sections.
 - `plotter/`: Rust/rustplotlib figures.
 - `coupled_sim/`: coupled solver, pinned FDTD/fluid dependencies, input profiles and physics tests.
+- `nonlinear_sim/`: total-density scalar fluid/Maxwell solver and separate tensor comparison.
 - `data/`, `evidence/`, and `reference/`: processed observations and compact model products.
 
 ## Reproduce the paper figures
