@@ -43,17 +43,17 @@ fn main() -> Result<()> {
         .collect();
     let rows = rd(&h, "catalog/rows")?;
     // Copernicus manuscript is 177 mm wide with 10 pt body type.
-    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 92.)?;
+    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 74.)?;
     let p = f.grid(1, 1)?[0];
-    f.height_mm = 92.;
-    f.panels[p].rect = Rect::new(22., 16., 131., 58.);
+    f.height_mm = 74.;
+    f.panels[p].rect = Rect::new(22., 16., 131., 40.);
     let mut ax = Axes::new(
         [t[0], *t.last().unwrap()],
-        [-115., -60.],
+        [-112., -63.],
         "",
         r"Equivalent RCS (dB m$^2$)",
     );
-    ax.yticks = vec![-110., -100., -90., -80., -70., -60.];
+    ax.yticks = vec![-110., -100., -90., -80., -70.];
     time_axes::time_axes(&mut ax, true, true)?;
     // A common display conversion uses the median event RCS-to-SNR offset.
     // Column 7 is fitted line power/noise power in a 22.727 kHz bandwidth.
@@ -73,7 +73,7 @@ fn main() -> Result<()> {
     };
     ax.secondary_y = Some(SecondaryAxis::new(
         "SNR (dB)",
-        vec![-10., 0., 10., 20., 30., 40.],
+        vec![-10., 0., 10., 20., 30.],
         |db| db - offset,
     )?);
     f.panels[p].axes = Some(ax);
