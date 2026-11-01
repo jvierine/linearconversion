@@ -69,6 +69,14 @@ def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,ther
     G=bmat([[Z,-gz*I,gy*ab],[gz*I,Z,-gx*ab],[-gy*av,gx*av,Z]],format='csr')
     beta=np.sqrt(3*kb*cfg.get('temperature',TE)/m_e)/c if thermal else 0.
     pressure=bmat([[1j*kx*beta*I],[Z],[beta*diags(sqrt_ne[2])@df@diags(1/sqrt_ne[0])]],format='csr')
+    # Audit only: p0=n0*kT, p1=3*kT*n1 gives an additional acceleration
+    # -(2/3)*cs^2*(n1/n0)*grad(log n0). Default remains the conservative
+    # effective barotropic closure used by the Rust evolution and paper.
+    pressure_gradient_audit=cfg.get('pressure_gradient_audit',False)
+    if pressure_gradient_audit:
+        dlog=df@np.log(ne[0])
+        correction=(2/3)*beta*diags(sqrt_ne[2]*dlog)@av@diags(1/sqrt_ne[0])
+        pressure=pressure+bmat([[Z],[Z],[correction]],format='csr')
     continuity=bmat([[1j*kx*beta*I,Z,beta*diags(1/sqrt_ne[0])@db@diags(sqrt_ne[2])]],format='csr')
     we=diags(wp.ravel());Le=diags((-1j*wd+ch*sponge[:3]).ravel());Lh=diags((-1j*wd+ch*sponge[3:]).ravel())
     Lj=diags((-1j*wd+ch*nu).ravel())-ch*G;Lq=diags(-1j*wd+ch*sponge[0])
@@ -82,7 +90,8 @@ def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,ther
     wj=diags(np.array([dual,dual,widths]).ravel());wq=diags(dual)
     adj=wj@pressure+continuity.conj().T@wq
     adjerr=np.max(abs(adj.data)) if adj.nnz else 0.
-    assert residual<1e-6 and adjerr<1e-10, (residual,adjerr)
+    assert residual<1e-6, residual
+    if not pressure_gradient_audit:assert adjerr<1e-10, adjerr
     return dict(n=n,z=z,dz_cells=widths,dual=dual,dt=dt,omega=om,kx=kx,gyro=gyro,wp=wp,nu=nu,
                 physical_nu=physical_nu,sponge=sponge,sqrt_ne=sqrt_ne,beta=beta,initial=sol.reshape(10,n,2),
                 source=source.reshape(10,n,2),spp=spp,ne=ne,center=center,D=D,

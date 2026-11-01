@@ -206,3 +206,29 @@ second resolution. It uses the same coupled equations and local Bragg
 projection as the E-region control. Equal flux at the F-region lower boundary
 does not include screening by the intervening sporadic-E layer. Results
 remain conditional on the fluid closure and omit Landau damping.
+
+## Pressure closure used for the paper
+
+The production Rust and harmonic solvers retain the simple scalar force
+`-cs^2 grad(delta_ne/ne)`, with `cs^2=3 kB Te/me` and constant 300 K.
+The coefficient is the standard Bohm--Gross longitudinal thermal response
+(Bohm & Gross 1949, doi:10.1103/PhysRev.75.1851); scalar gamma=3 thermal
+models are also used by Gondarenko et al. (2009, doi:10.1029/2009GL038379).
+The particular inhomogeneous force uses effective barotropic background
+support, not an exact magnetized pressure tensor.
+
+A separate harmonic audit restores the physical-background correction from
+`p0=ne kB Te`, `delta_p=3 kB Te delta_ne` (Willes & Cairns 2001, Eqs. 5--6,
+doi:10.1071/AS01051). It changes this case's coherent echo power by 0.271%,
+consistent at 1 cm and 0.5 cm resolution. The unmagnetized kinetic frequency
+at the Bragg scale differs from Bohm--Gross by 0.00055%. These checks do not
+validate magnetized kinetic effects, Landau damping, or the collision closure.
+
+```sh
+conda run -n base python scripts/check_scalar_closure.py
+```
+
+Results are in `../reference/coupled/scalar_closure_check.h5`. The optional
+`pressure_gradient_audit` setup flag is for this harmonic comparison only;
+it does not change the production Rust evolution or its energy accounting.
+The nonlinear tensor solver remains a separate experimental model.
