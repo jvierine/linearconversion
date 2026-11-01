@@ -49,8 +49,8 @@ fn main()->Result<()>{
  } else {fig.panels[p].rect.height=115.;fig.height_mm+=65.;}
  fig.panels[p].axes=Some(Axes::new(if zoom {[4.2,6.2]}else if article {[2.,6.25]}else{[2.,8.]},if zoom {[116.5,119.5]}else{[100.,130.]},"Frequency magnitude (MHz)","Altitude above radar (km)"));
  let ceiling=if epoch=="1525453430" {40.} else {15.};
- let sc=fig.scale(Scale::new([0.,ceiling],Normalization::Linear,ColorMap::ember())?);
- let values=read(&h,"displayed_power")?.iter().map(|v|10.*(1.+100.*v.max(0.)).log10()).collect();
+ let sc=fig.scale(Scale::new(if article {[-15.,20.]}else{[0.,ceiling]},Normalization::Linear,ColorMap::ember())?);
+ let values=if article {read(&h,"spectral_snr")?.iter().map(|v|10.*v.max(10_f64.powf(-1.5)).log10()).collect()}else{read(&h,"displayed_power")?.iter().map(|v|10.*(1.+100.*v.max(0.)).log10()).collect()};
  fig.panels[p].push(Layer::Pcolormesh(Field::new(edges(&x),edges(&y),values,sc)?));
  for (prefix,color) in [("ion","#cbd3df"),("model","#57e0dc")]{
   let xx=read(&h,&format!("{prefix}_plasma_line_mhz"))?;let yy=read(&h,&format!("{prefix}_height_km"))?;
@@ -87,14 +87,28 @@ fn main()->Result<()>{
    text.color="#ffffff".into();
   }
  }
+ if article {
+  // Stay on the high-frequency side, clear of the ordinary plasma line.
+  let text=fig.panels[p].label_at("Doppler sidelobes",[5.05,127.3]);
+  text.color="#ffffff".into();
+  for (start,end) in [([4.85,126.2],[4.92,122.25]),([5.45,126.2],[5.68,121.0])] {
+   let r=fig.panels[p].rect;let sx=r.width/4.25;let sy=r.height/30.;
+   let dx=(end[0]-start[0])*sx;let dy=(end[1]-start[1])*sy;
+   let length=dx.hypot(dy);let ux=dx/length;let uy=dy/length;
+   let a=[end[0]-(1.5*ux+0.6*uy)/sx,end[1]-(1.5*uy-0.6*ux)/sy];
+   let b=[end[0]-(1.5*ux-0.6*uy)/sx,end[1]-(1.5*uy+0.6*ux)/sy];
+   let mut line=Line::new(vec![start,end,a,end,b],"#ffffff");line.width_pt=0.65;
+   fig.panels[p].push(Layer::Line(line));
+  }
+ }
  let r=fig.panels[p].rect;
- let mut cb=if article {Colorbar::new(Rect::new(119.,63.,54.,3.),sc,"Excess power (dB, relative)",vec![0.,20.,40.])}
+ let mut cb=if article {Colorbar::new(Rect::new(119.,63.,54.,3.),sc,"SNR (dB)",vec![-15.,0.,20.])}
  else {Colorbar::new(Rect::new(r.x+6.,r.y+r.height+14.,r.width-12.,3.),sc,"Plasma-line excess power (dB, relative)",vec![0.,ceiling/4.,ceiling/2.,3.*ceiling/4.,ceiling])};
  cb.horizontal=true;fig.colorbars.push(cb);
  if article {fig.auto_colorbar_layout=false;}else{fig.layout_colorbars()?;fig.height_mm=fig.height_mm.max(fig.colorbars[0].rect.y+22.);}
  if article {
   let q=panels[1];
-  fig.panels[q].axes=Some(Axes::new([5.27,5.41],[-2.,140.],"Frequency magnitude (MHz)","Excess / noise"));
+  fig.panels[q].axes=Some(Axes::new([5.27,5.41],[-2.,140.],"Frequency magnitude (MHz)","SNR"));
   let spectrum=File::open("output/fluid/plasma_line_asymmetry.h5")?;
   for (name,color) in [("enhanced","#245774"),("opposite","#8b3940")]{
    let xx=read(&spectrum,&format!("1525453430/{name}/frequency_magnitude_mhz"))?;

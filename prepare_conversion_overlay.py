@@ -20,6 +20,27 @@ from isr.observed_layer import fit_observed_layer,save_profile,scattering_profil
 ROOT=Path(__file__).resolve().parent
 
 
+def add_snr(epoch):
+    """Use the same off-range noise estimator as the paired sideband spectra."""
+    source=ROOT/f'evidence/seid_event/results4/spl-{epoch}.h5'
+    with h5py.File(source) as src:
+        power=src['PL'][:];frequency=src['freqs'][:];height=src['range'][:]
+    noise=np.median(power[(height<105)|(height>130)],axis=0)
+    if not np.all(np.isfinite(noise)&(noise>0)):
+        raise ValueError('Invalid spectral noise reference')
+    fi=np.where((frequency<=-2)&(frequency>=-8))[0][::-1]
+    zi=np.where((height>=99.9)&(height<=130.1))[0]
+    snr=power[np.ix_(zi,fi)]/noise[fi][None,:]-1
+    with h5py.File(ROOT/f'data/conversion_overlay_{epoch}.h5','a') as dst:
+        for key,value in [('spectral_snr',snr),('noise_power',noise[fi])]:
+            if key in dst:del dst[key]
+            dst[key]=value
+        dst['spectral_snr'].attrs['definition']='(P-N)/N; signed spectral excess; no high-pass filter or smoothing'
+        dst['noise_power'].attrs['estimator']='median received power over ranges below 105 km or above 130 km, independently at each frequency'
+        dst.attrs['article_color_transform']='10 log10(max(spectral_snr,10**(-1.5))); limits -15 to 20 dB; nonpositive and sub-floor values use lowest color'
+        dst.attrs['snr_source_sha256']=hashlib.sha256(source.read_bytes()).hexdigest()
+
+
 def prepare(epoch):
     f=fit_observed_layer(epoch)
     save_profile(f,ROOT/f'data/smooth_observed_layer_{epoch}.h5')
@@ -85,9 +106,12 @@ def prepare(epoch):
             resonance='Re(1+chi_e)=0; Maxwellian magnetized electrons; k=2*pi*(2*430e6+f)/c; Nicolls et al. 2006',
             temperatures='ion: fitted Te at density cycle; smooth model: 300 K as in propagation simulation',
             caveat='Weakly damped real-frequency diagnostic; no ion motion, collision frequency shift or bulk Doppler shift; time pairing uses nearest ~80.4 s cycle')
+    add_snr(epoch)
     print(path, 'time offset',f['time_unix_s']-time,flush=True)
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--epoch',type=int,default=1525460596)
-    prepare(p.parse_args().epoch)
+    p.add_argument('--snr-only',action='store_true')
+    args=p.parse_args()
+    (add_snr if args.snr_only else prepare)(args.epoch)
