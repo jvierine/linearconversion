@@ -110,19 +110,17 @@ fn main() -> Result<()> {
     leg.avoid_data = false;
     leg.position = LegendPosition::LowerRight;
     f.panels[ps[0]].legend = Some(leg);
-    let mut ax = Axes::new([0.01, 200.], [-250., 60.], r"$|E_z|/|E_{\rm inc}|$", "");
+    let mut ax = Axes::new([0.01, 200.], [-250., 60.], r"$|E_j|/|E_{\rm inc}|$", "");
     ax.set_xscale(AxisScale::Log10)?;
     ax.yticks = vec![-200., -100., 0.];
     f.panels[ps[1]].axes = Some(ax);
-    series(
-        &mut f,
-        ps[1],
-        &rd(&h, "Ez_over_incident_peak")?,
-        &rd(&h, "Ez_height_relative_m")?,
-        0,
-        "",
-    );
+    let polarization = File::open("data/resonant_access_polarization.h5")?;
     let mut keys = vec![];
+    for (name, index, label) in [("Ez", 0, r"$E_z$"), ("Ex", 1, r"$E_x$"), ("Ey", 2, r"$E_y$")] {
+        keys.push(series(&mut f, ps[1],
+            &rd(&polarization, &format!("fields/{name}_over_incident"))?,
+            &rd(&polarization, &format!("fields/{name}_height_m"))?, index, label));
+    }
     for (y, index, label) in [(0., 3, "Resonance"), (critical, 4, r"$f_{pe}=f_0$")] {
         keys.push(series(&mut f, ps[1], &[0.01, 200.], &[y, y], index, label));
     }
@@ -143,8 +141,7 @@ fn main() -> Result<()> {
     for (y, index) in [(0., 3), (critical, 4)] {
         series(&mut f, zoom, &[-30., 10.], &[y, y], index, "");
     }
-    // Incident O-ray polarization at its upward resonance crossing.
-    let polarization = File::open("data/resonant_access_polarization.h5")?;
+    // Coupled full-wave field at resonance, anchored at the incident ray crossing.
     let anchor = rd(&polarization, "anchor_xz_m")?;
     let direction = rd(&polarization, "unit_projection_xz")?;
     let tip = [anchor[0] + 7.5 * direction[0], anchor[1] + 7.5 * direction[1]];
@@ -162,7 +159,7 @@ fn main() -> Result<()> {
     head.dash = None;
     head.width_pt = 1.3;
     f.panels[zoom].push(Layer::Line(head));
-    f.panels[zoom].label_at(r"$\mathbf E$", [-24., 9.]);
+    f.panels[zoom].label_at(r"$\mathbf E$", [-19.5, 10.]);
     // Leader links the actual turning point to the inset without covering B0.
     let mut leader = Line::new(vec![[5., critical + 4.], [600., 40.], [600., -60.]], "#777777");
     leader.width_pt = 0.6;
