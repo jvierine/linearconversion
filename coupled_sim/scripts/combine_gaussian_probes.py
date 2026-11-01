@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,json
 from PIL import Image,ImageDraw,ImageFont
 ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'output/gaussian_pulse';MEDIA=ROOT/'media/conversion'
-CASES=[('overview','1/3 · Electric field and density  |  Carrier sampled stroboscopically'),
+CASES=[('overview','1/3 · Pulsed field and density: phase mixing  |  Stroboscopic carrier'),
        ('flux','2/3 · Electromagnetic and plasma-wave energy flux  |  Positive upward'),
        ('current','3/3 · Horizontal and vertical current  |  Carrier sampled stroboscopically')]
 font=ImageFont.truetype('/System/Library/Fonts/Supplemental/Times New Roman.ttf',21)

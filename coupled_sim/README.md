@@ -429,9 +429,24 @@ conda run -n base python coupled_sim/scripts/combine_gaussian_probes.py
 ```
 
 The single `media/conversion/gaussian_10us_probes.mp4` cycles through three
-two-panel views: whole-layer electric field and bottomside density close-up,
+two-panel views: whole-layer electric field and bottomside density close-up
+(−20 to +20 m from the carrier resonance),
 vertical electromagnetic and plasma-wave energy fluxes, then horizontal and
 vertical current. Each view replays the same pulse through 3 ms. Fluxes are carrier-cycle averages, positive
 upward. The phase plots use stroboscopic carrier sampling, with the actual
 physical time displayed. All color scales are fixed throughout a movie.
 HDF5 arrays and numerical checks are retained under `output/gaussian_pulse/`.
+
+The short pulse also produces phase mixing: oscillations excited across a
+finite altitude band acquire different phases because the local plasma
+frequency varies with height. In the local cold limit,
+`k_z(t) = k_z(t_0) - (t-t_0) d omega_pe/dz`.
+At 10 m below the carrier resonance, the saved transient gives
+`d k_z/dt = -1.649e4 rad/(m s)`, versus `-1.672e4 rad/(m s)` from the
+background plasma-frequency gradient (1.4% difference over 150–800 µs).
+Consequently, wavelength contraction across the whole excited band is
+expected for this pulse and must not be interpreted as a single-frequency
+wave packet simply moving downward. Pressure energy flux measures wave
+energy transport separately. The optional `prepare_phase_closeup.py` and
+`render_gaussian_animation.py --phase` produce a short clip at 24 frames
+per actual carrier cycle, without skipped cycles.

@@ -40,7 +40,7 @@ def main():
     height=box[3]-box[1];width=box[2]-box[0]
     if view=='overview':zz=np.linspace(120800,115100,height)
     elif view=='wave_path':zz=bottom+np.linspace(40,-160,height)
-    else:zz=bottom+np.linspace(5,-20,height)
+    else:zz=bottom+np.linspace(20,-20,height)
     xx=np.linspace(-100,100,width)
     locations.append((zz,np.exp(1j*kx*xx)))
    output_case='phase_resolved' if args.phase else case
