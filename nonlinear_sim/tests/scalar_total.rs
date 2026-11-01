@@ -99,3 +99,56 @@ fn full_density_equations_approach_linear_limit() {
     }
     assert!((errors[1] / errors[0] - 4.).abs() < 0.03, "{errors:?}");
 }
+
+#[test]
+fn source_ramp_creates_wave_from_total_density_equilibrium() {
+    let mut c = cfg();
+    for z in 0..c.z.len() {
+        c.source[10][z] = [0.001, 0.];
+    }
+    let mut s = ScalarSolver::new(c);
+    s.ramp_time = 1.;
+    assert_eq!(s.source_envelope(0.), 0.);
+    assert!((s.source_envelope(0.5) - 0.5).abs() < 1e-15);
+    assert_eq!(s.source_envelope(1.), 1.);
+    assert!(
+        s.state
+            .iter()
+            .all(|q| q[0] == 1. && q[1..].iter().all(|v| *v == 0.))
+    );
+    for i in 0..400 {
+        s.step(i as f64 * s.cfg.dt);
+    }
+    assert!(s.state.iter().any(|q| (q[0] - 1.).abs() > 1e-6));
+    assert!(s.gauss().iter().all(|r| r.abs() < 3e-14));
+}
+
+#[test]
+fn scalar_collision_drag_damps_the_plasma_wave() {
+    let mut c = cfg();
+    c.linear = true;
+    let nu = 0.2;
+    c.nu.fill(nu);
+    let kd = (8. * c.dx.sin() - (2. * c.dx).sin()) / (6. * c.dx);
+    let wr = (1. + 3. * c.beta * c.beta * kd * kd - nu * nu / 4.).sqrt();
+    let amplitude = 1e-4;
+    for z in 0..c.z.len() {
+        c.initial[0][z] = [amplitude, 0.];
+        c.initial[1][z] = [
+            wr * amplitude / (c.beta * kd),
+            -nu * amplitude / (2. * c.beta * kd),
+        ];
+        c.initial[10][z] = [0., amplitude / (c.beta * kd)];
+    }
+    let mut s = ScalarSolver::new(c);
+    for i in 0..400 {
+        s.step(i as f64 * s.cfg.dt);
+    }
+    let t = 400. * s.cfg.dt;
+    for x in 0..s.cfg.nx {
+        let expected = 1.
+            + amplitude * (-nu * t / 2.).exp() * (TAU * x as f64 / s.cfg.nx as f64 - wr * t).cos();
+        assert!((s.state[x * s.cfg.z.len() + 3][0] - expected).abs() < 1e-11);
+    }
+    assert!(s.gauss().iter().all(|r| r.abs() < 3e-14));
+}

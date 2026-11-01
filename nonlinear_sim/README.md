@@ -8,9 +8,9 @@ field components. No pressure tensor is evolved. The equations are
 \partial_t n_e+\nabla\cdot(n_e\mathbf u)=0,\qquad\mathbf J=-en_e\mathbf u,
 \]
 \[
-(\partial_t+\mathbf u\cdot\nabla)\mathbf u
-=-\frac{e}{m_e}[\mathbf E_1+\mathbf u\times(\mathbf B_0+\mathbf B_1)]
--c_e^2\nabla\ln(n_e/n_{\rm eq})-\nu\mathbf u,
+\partial_t(n_e\mathbf u)+\nabla\cdot(n_e\mathbf u\mathbf u)
+=-\frac{e}{m_e}n_e[\mathbf E+\mathbf u\times\mathbf B]
+-c_e^2\nabla n_e-\nu n_e\mathbf u,
 \qquad c_e^2=3k_BT_{\rm ref}/m_e.
 \]
 
@@ -22,6 +22,9 @@ equilibrium fluxes and forces before differentiation, so the layer remains
 stationary without a wave. It stores total density; density differences are
 computed only where needed for equilibrium subtraction or diagnostics. Physical
 pressure anisotropy, temperature evolution and Landau damping remain absent.
+Here the total field includes the fixed equilibrium field that supports the
+measured density gradient. Subtracting the exactly balanced equilibrium terms
+inside the force calculation does not linearize the evolved density or momentum.
 
 From this repository root:
 
@@ -30,22 +33,66 @@ cargo build --release --manifest-path nonlinear_sim/Cargo.toml --bin scalar_tota
 cargo test --release --manifest-path nonlinear_sim/Cargo.toml --test scalar_total
 conda run -n base python nonlinear_sim/scripts/run_scalar_total.py --label scalar_total
 conda run -n base python nonlinear_sim/scripts/run_scalar_total.py --linear --label scalar_total_linear
+conda run -n base python nonlinear_sim/scripts/run_scalar_total.py --start equilibrium --ramp-cycles 10 --cycles 120 --dz .08 --frames 120 --label scalar_switch_on
+conda run -n base python nonlinear_sim/scripts/diagnose_scalar_total.py scalar_switch_on
 ```
 
 `output/scalar_total.h5` contains `electron_density_m3[time,x,z]`, the equilibrium
 density, ion density, positions, all evolved fields and momenta, and the initial
 scalar harmonic solution. In this file, state entry zero is total density, not
 a perturbation. The input harmonic solution is a weak-wave initial condition;
-it does not prescribe the later nonlinear evolution.
+it does not prescribe the later nonlinear evolution. With `--start equilibrium`,
+the actual initial density is exactly the background and all wave fields and
+electron momenta are zero. The radio current source is switched on with a smooth
+sine-squared envelope. Its charge is integrated consistently for the Gauss-law
+check; it is separate from electron density.
 
-Three tests verify stationary nonuniform equilibrium, Bohm--Gross dispersion
-with charge conservation, and quadratic departure from the linear limit. On the
+`diagnose_scalar_total.py` reads the saved total density and then computes
+`delta_density_x0_m3 = total_density_x0_m3 - equilibrium_density_m3` and the
+horizontal Fourier components. These are diagnostic products, not evolved state
+variables. Both total density and the extracted wave are retained. The integrated
+source-sheet scale can be fixed with `--drive-scale` for grid comparisons; the
+default `--amplitude` scales the harmonic reference, not the initial density in
+an equilibrium-start run.
+
+Five tests verify stationary nonuniform equilibrium, Bohm--Gross dispersion
+with charge conservation, quadratic departure from the linear limit, and
+wave creation from equilibrium by a ramped source. The fifth checks the analytic
+collisional decay rate, including the damped oscillation frequency. On the
 Arecibo profile, a one-period run starting at peak fractional amplitude 1e-4
 differs from its matching linear calculation by 1.58e-6 of the density-wave
 L2 amplitude over 117.930--117.960 km. Compact results are saved in
 `reference/scalar_total_check.h5`. This is a one-grid, one-period consistency
 check, not spatial convergence of the event RCS or a nonlinear steady state.
 The paper's existing validated linear results remain the quantitative reference.
+
+The 10-period total-density run remains positive and has a maximum normalized
+Gauss residual of 4.2e-14. Its principal horizontal density-wave component
+differs from the harmonic reference by 2.1e-8 in relative L2 norm near conversion.
+This checks time evolution on one mesh. The separate fixed-drive harmonic grid
+sweep in `reference/scalar_total_grid.h5` does **not** pass a 1% spatial convergence
+criterion: the last 5-to-2.5 mm comparison changes the complex wave by about 10%,
+or 3.8% after a fitted complex rescaling. The latter is only a shape diagnostic,
+not evidence of absolute power convergence. Source placement, the outer EM mesh,
+and the graded grid below the resolved wave region also require control. These
+new scalar runs therefore do not replace the paper's RCS or energy-loss results.
+
+The equilibrium-start test ran for 120 periods (22.47 microseconds) with total
+density positive and normalized Gauss residual below 1.3e-13. It did **not**
+establish a resolved converted wave: the near-resonance signal was only
+6.35e-10 of the background, and its vertical phase alternated by almost pi
+between adjacent cells. That is a grid-scale numerical artifact. The saved
+switch-on figure is a diagnostic of this failure, not a physical wave-generation
+result. The centered collocated spatial discretization and graded-grid transition
+need correction and convergence checks before interpreting a switch-on run.
+The initialized 10-period run and analytic tests establish the total-density
+implementation's basic behavior, not the validity of this transient.
+
+Render the equilibrium-start diagnostics from the repository root:
+
+```sh
+cargo run --release --manifest-path plotter/Cargo.toml --bin scalar_total_density
+```
 
 ## Tensor comparison model
 

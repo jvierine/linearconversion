@@ -18,7 +18,7 @@ MI={p:4+i for i,p in enumerate(PAIRS)};MI.update({(j,i):v for (i,j),v in list(MI
 FREQ=5.340028553893307e6;OMEGA=2*np.pi*FREQ;LENGTH=c/OMEGA
 V=np.sqrt(kb*300/m_e);BETA=V/c;NREF=epsilon_0*m_e*OMEGA**2/e**2;EREF=m_e*V*OMEGA/e
 
-def setup(dz=.04,nx=8):
+def setup(dz=.04,nx=8,*,background_only=False,outer_spacing=10.,grading=.04):
  with h5py.File(DATA/'smooth_observed_layer_1525453430.h5') as h:
   profile=CubicHermiteSpline(h['model_height_m'][:],h['model_ne_m3'][:],h['model_dne_dz_m4'][:])
  with h5py.File(DATA/'background_prior.h5') as h:
@@ -34,7 +34,7 @@ def setup(dz=.04,nx=8):
   z=zr
   while (z-bound)*direction<0:
    outside=max(zr-12-z,z-(zr+5),0.)
-   z+=direction*min(10.,dz+.04*outside);zz.append(z)
+   z+=direction*min(outer_spacing,dz+grading*outside);zz.append(z)
  zsi=np.array(sorted(zz));z=zsi/LENGTH;n=len(z)
  sample=np.clip(zsi,115300,120800);n0=profile(sample)/NREF
  inv=np.zeros(n);inv[1:-1]=1/(z[2:]-z[:-2]);D=diags(inv)@(diags(np.ones(n-1),1)-diags(np.ones(n-1),-1))
@@ -50,6 +50,13 @@ def setup(dz=.04,nx=8):
  sig=40*LENGTH/700*depth**3
  kx=np.sin(np.deg2rad(16.75));dx=2*np.pi/(kx*nx)
  kd=(8*np.sin(kx*dx)-np.sin(2*kx*dx))/(6*dx)
+ if background_only:
+  source=np.zeros((16,n),complex)
+  iz=np.argmin(abs(zsi-114850))
+  # Integrated source-sheet strength is independent of the local grid width.
+  width=(z[iz+1]-z[iz-1])/2
+  source[10,iz]=1./width;source[11,iz]=(.11986+1.01797j)/width
+  return dict(z=z,n0=n0,eq_ez=eq,nu=nu,sponge=sig,beta=BETA,gyro=gyro,dx=dx,nx=nx),None,source,dict(z_m=zsi,kx_per_m=kx/LENGTH,kx_discrete_per_m=kd/LENGTH,resonance_m=zr,nu_ei_s=ei,nu_en_s=en,source_height_m=zsi[iz])
  I=eye(n,format='csr');Z=csr_matrix((n,n));A=[[Z.copy() for _ in range(16)] for _ in range(16)]
  def add(i,j,v):A[i][j]=A[i][j]+v
  deriv=[1j*kd*I,Z,D];L=np.array([[0,-gyro[2],gyro[1]],[gyro[2],0,-gyro[0]],[-gyro[1],gyro[0],0]])
