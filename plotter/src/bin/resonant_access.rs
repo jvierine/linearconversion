@@ -56,6 +56,24 @@ fn main() -> Result<()> {
         let xx: Vec<_> = x.iter().map(|v| v - offset).collect();
         let zz: Vec<_> = z.iter().map(|v| v - center).collect();
         keys.push(series(&mut f, ps[0], &xx, &zz, index, label));
+        // Arrowheads follow the stored ray order (incident then reflected).
+        // Size in page units, so unequal axis scales do not distort the heads.
+        let turn = zz.iter().enumerate().max_by(|(_, a), (_, b)| a.total_cmp(b)).unwrap().0;
+        let target = if index == 0 { -100. } else { -220. };
+        for range in [1..turn, turn + 1..zz.len() - 1] {
+            let k = range.min_by(|&a, &b| (zz[a] - target).abs().total_cmp(&(zz[b] - target).abs())).unwrap();
+            let (sx, sy) = (70. / 1550., 84. / 310.);
+            let (dx, dy) = ((xx[k + 1] - xx[k - 1]) * sx, (zz[k + 1] - zz[k - 1]) * sy);
+            let norm = dx.hypot(dy);
+            let (ux, uy) = (dx / norm, dy / norm);
+            let tip = [xx[k], zz[k]];
+            let left = [tip[0] - (2.5 * ux + 1. * uy) / sx, tip[1] - (2.5 * uy - 1. * ux) / sy];
+            let right = [tip[0] - (2.5 * ux - 1. * uy) / sx, tip[1] - (2.5 * uy + 1. * ux) / sy];
+            let mut head = Line::series(vec![left, tip, right], index);
+            head.dash = None;
+            head.width_pt = 1.4;
+            f.panels[ps[0]].push(Layer::Line(head));
+        }
     }
     for (y, index) in [(0., 3), (critical, 4)] {
         series(&mut f, ps[0], &[-750., 800.], &[y, y], index, "");
