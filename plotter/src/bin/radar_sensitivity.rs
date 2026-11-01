@@ -65,6 +65,18 @@ fn main() -> Result<()> {
     );
     let observed = line(&mut f, p, &[-25., 25.], &[obs, obs], 4, "Observed");
     f.panels[p].legend = Some(Legend::new(vec![model, observed]));
+    // Cold-plasma Spitze geometry from the same field and pump frequency.
+    let spitze_file = File::open("reference/coupled/spitze_transmission.h5")?;
+    let spitze = spitze_file.attr("spitze_angle_magnitude_deg")?.read_scalar::<f64>()?;
+    for angle in [-spitze, spitze] {
+        line(&mut f, p, &[angle, angle], &[-125., -55.], 3, "");
+        let mut label = Label::new(
+            if angle < 0. { r"$-16.7^\circ$" } else { r"$+16.7^\circ$" },
+            if angle < 0. { 37. } else { 66. }, 48.);
+        label.leader = Some([22. + (angle + 25.) / 50. * 60., 44.]);
+        f.labels.push(label);
+    }
+    f.labels.push(Label::new("Spitze", 52., 31.));
     let p = ps[1];
     let mut ax = Axes::new(
         [0., 90.],
