@@ -232,3 +232,23 @@ Results are in `../reference/coupled/scalar_closure_check.h5`. The optional
 `pressure_gradient_audit` setup flag is for this harmonic comparison only;
 it does not change the production Rust evolution or its energy accounting.
 The nonlinear tensor solver remains a separate experimental model.
+
+### Minimum incident power for the observed 5.34 MHz line
+
+`conda run -n base python coupled_sim/scripts/minimum_incident_power.py`
+scans magnetic-meridian incidence and optimizes the complex source
+polarization for the coherent radar return per unit upward incident EM flux.
+The minimum within the -25 to +25 degree scan is near 13.96 degrees:
+8.43e-12 W/m2, or 65.3 microvolt/m RMS in the incident wave at the lower
+reference plane. The 2.5 mm grid changes the inferred flux by 0.054% from
+the 5 mm grid. These are conditional beam-filled coherent-model results,
+not a transmitter power or a global optimum over all geometries.
+
+`conda run -n base python coupled_sim/scripts/plot_minimum_incident_data.py`
+generates `data/minimum_incident_plots.h5`. The Rust figure binary is
+`minimum_incident`; it reads that HDF5 product. The height-time image is the
+real part of the sustained harmonic solution over three periods, not a
+switch-on or growth simulation. `reference/coupled/minimum_incident.h5`
+retains the solved fields and density covering the radar-response window.
+Validate the saved solution with
+`conda run -n base python coupled_sim/scripts/check_minimum_incident.py`.
