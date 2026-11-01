@@ -128,3 +128,20 @@ is fitted under the coherent beam-filling assumption. The effective rectangular
 record models the principal spectral response, not the unknown full code/receiver
 ambiguity function. This calculation uses the converged linear event model;
 the experimental nonlinear solver's spatial-convergence limits remain unchanged.
+
+## Direct-path HF source map
+
+Scan ordinary-mode coupling over incidence and azimuth, then trace magnetoionic
+group rays to the ground for the 5.34 MHz enhancement:
+
+```sh
+conda run -n base python coupled_sim/scripts/source_location_map.py
+conda run -n base python coupled_sim/scripts/prepare_source_map_plot.py
+cargo run --release --manifest-path plotter/Cargo.toml --bin source_location_map
+conda run -n base python -m pytest coupled_sim/tests/test_source_location_map.py -q
+```
+
+The map compares equal incident vertical HF fluxes below the layer. It is not
+a probability map or an equal-ground-transmitter-power comparison. The rays
+assume horizontal stratification and no earlier ionospheric hop. The HDF5
+product is `reference/coupled/source_location_map.h5`.

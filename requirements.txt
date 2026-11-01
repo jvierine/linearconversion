@@ -7,3 +7,6 @@ pytest
 threadpoolctl
 
 ppigrf==2.1.0
+pyproj
+cartopy
+shapely

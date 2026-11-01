@@ -26,7 +26,10 @@ P=cold.P
 def setup(dz=.02,angle=16.75,reference=False,collision_scale=1.,buffer=600.,thermal=True,cap=2.,cfl=.4,scenario=None):
     cfg={} if scenario is None else scenario
     tilt=np.deg2rad(cfg.get('field_angle_deg',P['field_angle_deg']))
-    gyro=e*cfg.get('magnetic_t',P['magnetic_t'])/m_e/c*np.array([np.sin(tilt),0.,-np.cos(tilt)])
+    field_azimuth=np.deg2rad(cfg.get('field_azimuth_deg',0.))
+    gyro=e*cfg.get('magnetic_t',P['magnetic_t'])/m_e/c*np.array([
+        np.sin(tilt)*np.cos(field_azimuth),
+        np.sin(tilt)*np.sin(field_azimuth),-np.cos(tilt)])
     om=W/c;D=W**2*(W**2-np.sum((c*gyro)**2))/(W**2-(c*gyro[2])**2)
     profile=cfg.get('profile',PROFILE)
     center=cfg.get('center',None)
