@@ -263,3 +263,20 @@ they do not supply mode-conversion efficiencies or amplitudes. The full-wave
 solution supplies the fields and energy budget. The `resonant_access` Rust
 plotter renders this diagnostic. The independent local-dispersion checks run
 with `conda run -n base python -m pytest coupled_sim/tests/test_resonant_access.py`.
+
+## FDTD versus ray/WKB reflection
+
+```sh
+conda run -n base python coupled_sim/scripts/fdtd_ray_benchmark.py
+cargo run --release --locked --manifest-path plotter/Cargo.toml --bin fdtd_ray_benchmark -- reference/coupled/fdtd_ray_benchmark.h5
+conda run -n base python -m pytest coupled_sim/tests/test_fdtd_ray_benchmark.py -q
+```
+
+Run these from the repository root. If conda's MPI wrapper points to an
+unavailable compiler, set `MPICC` to a working MPI wrapper before the first
+command (on the development Mac: `/opt/homebrew/bin/mpicc`).
+The scalar control uses the measured smooth Es density, B=0 and no collisions;
+the event control restores B and collisions. Native Rust recordings start
+from CW equilibrium, not switch-on. WKB field-magnitude errors are for the
+scalar control only, not magnetized mode-conversion or finite-beam ray errors.
+The HDF5 report includes mesh checks, executable hash and the complete driver.
