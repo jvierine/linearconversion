@@ -7,9 +7,9 @@ from lmode_animation import ROOT,OUT
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--case',choices=['topside_optimum','bottomside_optimum','topside_spitze']);args=p.parse_args()
-    cases=[('topside_optimum',1,'Topside conversion: favorable O-mode incidence'),
-           ('bottomside_optimum',-1,'Bottomside conversion: favorable O-mode incidence'),
-           ('topside_spitze',1,'Spitze transmission window')]
+    cases=[('topside_optimum',1,'Whole-layer simulation: topside-favoring incidence'),
+           ('bottomside_optimum',-1,'Whole-layer simulation: bottomside-favoring incidence'),
+           ('topside_spitze',1,'Whole-layer simulation: Spitze transmission window')]
     subprocess.run(['cargo','build','--release','--locked','--manifest-path',str(ROOT/'plotter/Cargo.toml'),'--bin','conversion_animation'],check=True)
     for label,side,title in cases:
         if args.case and args.case!=label:continue

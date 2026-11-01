@@ -335,9 +335,23 @@ conda run -n base python coupled_sim/scripts/render_conversion_animations.py
 Movies and the complete HDF5 fields are written to `output/lmode_animation/`.
 Rendering requires the pinned rustplotlib crate and `ffmpeg`. The MP4 repeats
 one period three times, slowed to 12 seconds. The GIF loops the same period.
-No envelope growth or upward-moving wave is imposed by the plotter. The movies
-show the background density, signed vertical electric field, signed density
-perturbation and a two-dimensional density cut, with height increasing upward.
+No envelope growth or upward-moving wave is imposed by the plotter. Every movie
+shows **both sides of the same full-layer solution**: blue A marks the topside
+zoom and orange B marks the bottomside zoom. Matching boxes locate the zooms on
+the overview density and electromagnetic-energy-flux profiles. Each zoom shows
+the signed vertical electric field, a two-dimensional density perturbation,
+and the signed pressure energy flux. Height increases upward in every panel.
+Field and density color limits are fixed across the three movies, so a weak
+response is not visually magnified into apparent strong conversion.
+
+The full-height electromagnetic curve is the period-averaged **net vertical
+Poynting flux**, calculated from E cross B / mu0, positive upward and normalized
+to incident upward power. Boundary labels separately give upward incident,
+downward reflected, and upward transmitted power at the outer ports. We do not
+interpret the interior net curve as a separately decomposed upgoing mode where
+incident/reflected/converting fields overlap. The pressure-energy-flux panels
+show the fluid transport separately; they are not electromagnetic Poynting flux.
+Both flux diagnostics are steady period averages while E and density oscillate.
 
 The incident wave is the **ordinary eigenmode at the lower port** in all cases.
 Angles are signed, vacuum-equivalent angles from vertical in the magnetic
