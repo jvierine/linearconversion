@@ -9,6 +9,18 @@ fn rgb(c:&str)->[f64;3]{let s=c.trim_start_matches('#');[0,2,4].map(|i|u8::from_
 fn marks(f:&mut Figure,p:usize,pts:&[[f64;2]],c:&str,size:f64,shape:MarkerShape)->Result<()>{let mut pan=f.panels[p].clone();pan.markers(f,pts,&MarkerStyle{shape,size_pt:size,color:rgb(c)})?;f.panels[p]=pan;Ok(())}
 fn line(f:&mut Figure,p:usize,x:&[f64],y:&[f64],c:&str)->Result<()>{let mut l=Line::new(x.iter().zip(y).map(|(&x,&y)|[x,y]).collect(),c);l.width_pt=1.;f.panels[p].push(Layer::Line(l));Ok(())}
 fn save(f:&Figure,name:&str)->Result<()>{for ext in ["png","pdf"]{f.save(format!("figures/{name}.{ext}"))?;}Ok(())}
+// Symbols have a fixed six-point diameter, independent of axis aspect.
+fn plain_symbols(panel:&mut Panel,points:&[[f64;2]],cross:bool){
+ let a=panel.axes.as_ref().unwrap();let r=3.*25.4/72.27;
+ let dx=r*(a.xlim[1]-a.xlim[0])/panel.rect.width;
+ let dy=r*(a.ylim[1]-a.ylim[0])/panel.rect.height;
+ let mut path=Vec::new();
+ for &[x,y] in points {
+  if cross {path.extend([[x-dx,y-dy],[x+dx,y+dy],[f64::NAN;2],[x-dx,y+dy],[x+dx,y-dy],[f64::NAN;2]]);}
+  else {for i in 0..=48 {let t=i as f64*std::f64::consts::TAU/48.;path.push([x+dx*t.cos(),y+dy*t.sin()]);}path.push([f64::NAN;2]);}
+ }
+ let mut line=Line::new(path,"#000000");line.width_pt=0.8;panel.push(Layer::Line(line));
+}
 fn main()->Result<()>{
  let h=File::open("data/opposite_candidate.h5")?;let dh=File::open("data/density_reference_debye.h5")?;
  let colors=["#245774","#527f6d","#8B3940","#765a90","#b86f25"];
@@ -35,11 +47,16 @@ fn main()->Result<()>{
  let density_palette=rd(&dh,"palette/density_rgb")?.chunks_exact(3).map(|v|[v[0],v[1],v[2]]).collect();
  let sc=f.scale(Scale::new([8.,12.],Normalization::Linear,ColorMap::listed(density_palette)?)?);
  f.panels[p].push(Layer::Pcolormesh(Field::new(t,edges(&z),rd(&dh,"map/ne_m3")?.iter().map(|x|x.max(1e8).log10()).collect(),sc)?));
- let marker_colors=["#0072B2","#D55E00"];
- let shapes=[MarkerShape::Circle,MarkerShape::Diamond];
- // Open symbols and a shared halo pass preserve overlapping frequency classes.
- let groups=[MarkerGroup{label:"4.51 MHz",points:&points[0],style:MarkerStyle{shape:shapes[0],size_pt:8.,color:rgb(marker_colors[0])}},MarkerGroup{label:"5.34 MHz",points:&points[1],style:MarkerStyle{shape:shapes[1],size_pt:8.,color:rgb(marker_colors[1])}}];
- let mut legend=f.panels[p].marker_groups(&groups)?;legend.position=LegendPosition::LowerLeft;legend.avoid_data=false;f.panels[p].legend=Some(legend);
+ // Plain black symbols, without halos; coordinates remain measured values.
+ for (j,pts) in points.iter().enumerate(){plain_symbols(&mut f.panels[p],pts,j==0);}
+ // Compact in-axis legend using the identical symbol paths as the data.
+ let left=f.panels[p].axes.as_ref().unwrap().xlim[0]+0.08;
+ let white=f.scale(Scale::new([0.,1.],Normalization::Linear,ColorMap::new(vec![[1.;3],[1.;3]])?)?);
+ f.panels[p].push(Layer::PolygonMesh(PolygonMesh::new(vec![vec![[left,51.5],[left+0.9,51.5],[left+0.9,61.5],[left,61.5]]],vec![0.5],white)?));
+ for (j,z) in [58.8,54.4].iter().enumerate(){
+  plain_symbols(&mut f.panels[p],&[[left+0.12,*z]],j==0);
+  f.panels[p].label_at(if j==0{"4.51 MHz"}else{"5.34 MHz"},[left+0.55,*z]);
+ }
  f.colorbars.push(Colorbar::new(Rect::new(173.,24.,3.,map_height),sc,r"$\log_{10}(n_e\,/\,\mathrm{m}^{-3})$",(16..=24).map(|i|i as f64/2.).collect()));f.layout_colorbars()?;
  save(&f,"density_enhancement_times")?;
  // Antialiased screen preview, not filtering or resampling of scientific data.

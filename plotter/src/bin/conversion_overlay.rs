@@ -43,7 +43,27 @@ fn main()->Result<()>{
   let xx=read(&h,&format!("{prefix}_fpe_mhz"))?;let yy=read(&h,&format!("{prefix}_height_km"))?;
   for points in overlay_segments(&xx,&yy,&epoch){fig.panels[p].push(Layer::Line(Line::new(points,color)));}
  }
- // Curves are identified in the article caption to leave the measured map unobscured.
+ // Inside the quiet lower-right map region; retain the data and existing curve gaps.
+ let mut legend=Legend::new(vec![
+  LegendEntry::line("Ion-line plasma frequency", "#cbd3df"),
+  LegendEntry::line("Smooth density model", "#57e0dc")]);
+ legend.position=LegendPosition::LowerRight;legend.avoid_data=false;
+ fig.panels[p].legend=Some(legend);
+ if epoch=="1525453430" && !zoom {
+  // Arrowheads use physical page distances so axis aspect does not distort them.
+  for (label,start,end) in [
+   ("4.51 MHz",[4.52,113.0],[4.5166015625,117.37]),
+   ("5.34 MHz",[6.55,114.5],[5.33447265625,117.52])]{
+   let r=fig.panels[p].rect;let sx=r.width/6.;let sy=r.height/30.;
+   let dx=(end[0]-start[0])*sx;let dy=(end[1]-start[1])*sy;
+   let length=dx.hypot(dy);let ux=dx/length;let uy=dy/length;
+   let a=[end[0]-(2.*ux+0.8*uy)/sx,end[1]-(2.*uy-0.8*ux)/sy];
+   let b=[end[0]-(2.*ux-0.8*uy)/sx,end[1]-(2.*uy+0.8*ux)/sy];
+   fig.panels[p].push(Layer::Line(Line::new(vec![start,end,a,end,b],"#ffffff")));
+   let text=fig.panels[p].label_at(label,[start[0],start[1]-0.85]);
+   text.color="#ffffff".into();
+  }
+ }
  let r=fig.panels[p].rect;
  let mut cb=Colorbar::new(Rect::new(r.x+6.,r.y+r.height+14.,r.width-12.,3.),sc,"Plasma-line excess power (dB, relative)",vec![0.,ceiling/4.,ceiling/2.,3.*ceiling/4.,ceiling]);
  cb.horizontal=true;fig.colorbars.push(cb);fig.layout_colorbars()?;
