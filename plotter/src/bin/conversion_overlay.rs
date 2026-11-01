@@ -47,7 +47,7 @@ fn main()->Result<()>{
   }
   if prefix=="ion" {
    for points in overlay_segments(&xx,&yy,&epoch,[120.,130.]){
-    let mut line=Line::new(points,"#ffffff");line.opacity=0.25;line.width_pt=0.6;
+    let mut line=Line::new(points,"#ffffff");line.opacity=0.4;line.width_pt=0.6;
     fig.panels[p].push(Layer::Line(line));
    }
   }
