@@ -6,7 +6,7 @@ fn read(f:&File,k:&str)->Result<Vec<f64>>{Ok(f.dataset(k)?.read_raw::<f64>()?)}
 fn edges(v:&[f64])->Vec<f64>{let mut e=vec![v[0]-(v[1]-v[0])/2.];e.extend(v.windows(2).map(|w|(w[0]+w[1])/2.));e.push(v[v.len()-1]+(v[v.len()-1]-v[v.len()-2])/2.);e}
 // Presentation-only gaps uncover measured line enhancements. Neither the
 // equilibrium supplied to the solver nor any spectral pixel is changed.
-fn overlay_segments(x:&[f64],y:&[f64],epoch:&str)->Vec<Vec<[f64;2]>>{
+fn overlay_segments(x:&[f64],y:&[f64],epoch:&str,zlim:[f64;2])->Vec<Vec<[f64;2]>>{
  let heights=if epoch=="1525453430" {[117.2,118.7]}else{[113.2,115.2]};
  let hidden=|f:f64,z:f64| z>=heights[0]&&z<=heights[1]
      && ((f>=4.40&&f<=4.62)||(f>=5.20&&f<=5.46));
@@ -17,13 +17,13 @@ fn overlay_segments(x:&[f64],y:&[f64],epoch:&str)->Vec<Vec<[f64;2]>>{
   let n=((x[i+1]-x[i]).abs()/0.005).max((y[i+1]-y[i]).abs()/0.01).ceil().max(1.) as usize;
   for j in 0..n{
    let t=j as f64/n as f64;let f=x[i]+t*(x[i+1]-x[i]);let z=y[i]+t*(y[i+1]-y[i]);
-   if z<100.||z>130.||hidden(f,z){
+   if z<zlim[0]||z>zlim[1]||hidden(f,z){
     if line.len()>1{segments.push(std::mem::take(&mut line));}else{line.clear();}
    }else{line.push([f,z]);}
   }
  }
  let f=x[x.len()-1];let z=y[y.len()-1];
- if z>=100.&&z<=130.&&!hidden(f,z){line.push([f,z]);}
+ if z>=zlim[0]&&z<=zlim[1]&&!hidden(f,z){line.push([f,z]);}
  if line.len()>1{segments.push(line);}
  segments
 }
@@ -41,7 +41,16 @@ fn main()->Result<()>{
  fig.panels[p].push(Layer::Pcolormesh(Field::new(edges(&x),edges(&y),values,sc)?));
  for (prefix,color) in [("ion","#cbd3df"),("model","#57e0dc")]{
   let xx=read(&h,&format!("{prefix}_fpe_mhz"))?;let yy=read(&h,&format!("{prefix}_height_km"))?;
-  for points in overlay_segments(&xx,&yy,&epoch){fig.panels[p].push(Layer::Line(Line::new(points,color)));}
+  // Presentation only: expose the ordinary plasma line above 120 km.
+  for points in overlay_segments(&xx,&yy,&epoch,[100.,120.]){
+   fig.panels[p].push(Layer::Line(Line::new(points,color)));
+  }
+  if prefix=="ion" {
+   for points in overlay_segments(&xx,&yy,&epoch,[120.,130.]){
+    let mut line=Line::new(points,"#ffffff");line.opacity=0.25;line.width_pt=0.6;
+    fig.panels[p].push(Layer::Line(line));
+   }
+  }
  }
  // Inside the quiet lower-right map region; retain the data and existing curve gaps.
  let mut legend=Legend::new(vec![
