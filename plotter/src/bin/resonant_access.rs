@@ -60,6 +60,30 @@ fn main() -> Result<()> {
     for (y, index) in [(0., 3), (critical, 4)] {
         series(&mut f, ps[0], &[-750., 800.], &[y, y], index, "");
     }
+    // Bx>0, Bz<0. Use the event input and data-coordinate direction;
+    // the unequal horizontal/vertical axis scales also apply to this vector.
+    let background = File::open("coupled_sim/data/background_prior.h5")?;
+    let tilt = background.dataset("field_angle_deg")?.read_scalar::<f64>()?.to_radians();
+    let start = [85., 10.];
+    let end = [start[0] + 90. * tilt.sin(), start[1] - 90. * tilt.cos()];
+    let mut field = Line::new(vec![start, end], "#171717");
+    field.width_pt = 1.2;
+    f.panels[ps[0]].push(Layer::Line(field));
+    // Construct the arrowhead in page units so it remains legible.
+    let sx = 70. / 1550.;
+    let sy = 84. / 310.;
+    let dx = (end[0] - start[0]) * sx;
+    let dy = (end[1] - start[1]) * sy;
+    let length = dx.hypot(dy);
+    let (ux, uy) = (dx / length, dy / length);
+    let left = [end[0] - (2. * ux + 0.8 * uy) / sx,
+                end[1] - (2. * uy - 0.8 * ux) / sy];
+    let right = [end[0] - (2. * ux - 0.8 * uy) / sx,
+                 end[1] - (2. * uy + 0.8 * ux) / sy];
+    let mut head = Line::new(vec![left, end, right], "#171717");
+    head.width_pt = 1.2;
+    f.panels[ps[0]].push(Layer::Line(head));
+    f.panels[ps[0]].label_at(r"$\mathbf B_0$", [285., -20.]);
     let mut leg = Legend::new(keys);
     // Fixed clear corner, checked in the rendered manuscript.
     leg.avoid_data = false;
