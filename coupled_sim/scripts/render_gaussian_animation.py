@@ -19,9 +19,9 @@ def rounded(value):
  return np.ceil(value/exponent)*exponent
 
 def main():
- parser=argparse.ArgumentParser();parser.add_argument("--preview",action="store_true");parser.add_argument('--phase',action='store_true');parser.add_argument('--cases',default='overview,fields,flux,current');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument("--preview",action="store_true");parser.add_argument('--phase',action='store_true');parser.add_argument('--cases',default='overview,fields,flux,current');parser.add_argument('--input',type=Path);parser.add_argument('--stem');args=parser.parse_args()
  subprocess.run(['cargo','build','--release','--locked','--manifest-path',str(ROOT/'plotter/Cargo.toml'),'--bin','gaussian_movie_background'],check=True)
- with h5py.File(OUT/('phase_movie.h5' if args.phase else 'movie.h5')) as h:
+ with h5py.File(args.input or OUT/('phase_movie.h5' if args.phase else 'movie.h5')) as h:
   times=h['time_s'][:];angle=float(h.attrs['angle_deg']);f0=h.attrs['carrier_hz'];kx=h.attrs['kx_m1'];bottom=h.attrs['bottom_resonance_m'];top=h.attrs['top_resonance_m'];zall=h['height_m'][:]
   for case,panels in CASES.items():
    if case not in args.cases.split(','):continue
@@ -45,8 +45,8 @@ def main():
     else:zz=bottom+np.linspace(20,-20,height)
     xx=np.linspace(-100,100,width)
     locations.append((zz,np.exp(1j*kx*xx)))
-   output_case='phase_resolved' if args.phase else case
-   dest=MEDIA/f'gaussian_10us_{output_case}.mp4'
+   output_case=args.stem or ('phase_resolved' if args.phase else case)
+   dest=MEDIA/(f'{args.stem}.mp4' if args.stem else f'gaussian_10us_{output_case}.mp4')
    cmd=['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s','1920x1080','-r','30','-i','-','-an','-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
    proc=None if args.preview else subprocess.Popen(cmd,stdin=subprocess.PIPE)
    peak=int(np.argmax(np.max(abs(arrays[1]),axis=1)))
@@ -67,7 +67,8 @@ def main():
       box=boxes[j];field_image=field_image.resize((box[2]-box[0],box[3]-box[1]),Image.Resampling.LANCZOS)
      image.paste(field_image,boxes[j][:2]);patchbox,patch=patches[j];image.paste(patch,patchbox[:2])
     draw=ImageDraw.Draw(image)
-    draw.text((960,5),f'5.34 MHz   |   10 μs envelope   |   {angle:.2f}° incidence   |   t = {t*1e6:.2f} μs',font=FONT,fill='black',anchor='mt')
+    source_label=h.attrs.get('source_label','10 μs envelope')
+    draw.text((960,5),f'{f0/1e6:.5f} MHz   |   {source_label}   |   {angle:.2f}° incidence   |   t = {t*1e6:.3f} μs',font=FONT,fill='black',anchor='mt')
     for j,(_,view,_) in enumerate(panels):
      box=boxes[j]
      if view=='overview':
@@ -78,11 +79,11 @@ def main():
      else:
       label='Bottomside close-up' if view=='closeup' else 'Downward wave path'
       draw.text((box[0]+10,box[1]+10),label,font=FONT,fill='black',stroke_width=1,stroke_fill='white')
-    note='Carrier phase resolved; time is physical' if args.phase else 'Cycle-averaged energy flux; positive upward' if case=='flux' else 'Carrier shown stroboscopically; time is physical'
-    draw.text((960,1073),note,font=FONT,fill=(60,60,60),anchor='mb')
+    note=h.attrs.get('display_note') or ('Carrier phase resolved; time is physical' if args.phase else 'Cycle-averaged energy flux; positive upward' if case=='flux' else 'Carrier shown stroboscopically; time is physical')
+    draw.text((960,1078),note,font=ImageFont.truetype('/System/Library/Fonts/Supplemental/Times New Roman.ttf',21),fill=(60,60,60),anchor='mb')
     if proc is not None:proc.stdin.write(image.tobytes())
     if frame in [0,peak,poster,len(times)-1]:image.save(OUT/f'{case}_{frame:04d}.png')
-    if frame==poster:image.save(MEDIA/f'gaussian_10us_{output_case}.png')
+    if frame==poster:image.save(MEDIA/(f'{args.stem}.png' if args.stem else f'gaussian_10us_{output_case}.png'))
     if frame%200==0:print('render',case,frame,'/',len(times),flush=True)
    if args.preview:continue
    proc.stdin.close();assert proc.wait()==0

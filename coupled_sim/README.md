@@ -451,3 +451,28 @@ wave packet simply moving downward. Pressure energy flux measures wave
 energy transport separately. The optional `prepare_phase_closeup.py` and
 `render_gaussian_animation.py --phase` produce a short clip at 24 frames
 per actual carrier cycle, without skipped cycles.
+
+## Continuous illumination movies
+
+`prepare_steady_animation.py` uses the article's saved minimum-power harmonic
+solution, including its incident-field normalization and polarization.
+`render_gaussian_animation.py --cases fields --input output/gaussian_pulse/steady_movie.h5 --stem steady_article`
+shows eight periods at 48 frames per period. It displays the sustained phase
+motion; it does not simulate arrival or growth from rest.
+
+`prepare_gaussian_animation.py --continuous` instead reconstructs switch-on
+from the broadband 5.340 MHz pulse responses. The Gaussian-envelope response
+is integrated in the rotating frame to obtain the response to a smooth
+error-function source turn-on. This is causal frequency-response synthesis
+of the same linear discrete equations, not a long native Rust timestep run.
+The initial wave state is zero, while the equilibrium electron density and
+magnetic field remain present. The final field is checked against the carrier
+harmonic response. The startup grid/carrier are those of the pulse calculation;
+the exact article phase movie uses the article's saved grid and carrier.
+
+`validate_continuous_startup.py` checks the zero initial wave state and final
+electric-field/density convergence. Use `render_gaussian_animation.py --cases
+overview --input output/gaussian_pulse/startup_movie.h5 --stem continuous_startup`
+for the switch-on movie. Its source rises around 60 µs; the background density
+and static magnetic field are present throughout. Long-duration carrier motion
+is stroboscopic; the separate steady article movie resolves every cycle.

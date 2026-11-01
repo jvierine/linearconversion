@@ -3,11 +3,12 @@ from pathlib import Path
 import numpy as np,h5py,argparse
 from scipy.fft import fft
 from scipy.interpolate import CubicSpline
+from scipy.integrate import cumulative_trapezoid
 from scipy.constants import epsilon_0,m_e,e,k as kb,c
 ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'output/gaussian_pulse'
 
 def main():
- parser=argparse.ArgumentParser();parser.add_argument("--dz",type=float,default=.002);dz=parser.parse_args().dz
+ parser=argparse.ArgumentParser();parser.add_argument("--dz",type=float,default=.002);parser.add_argument('--continuous',action='store_true');args=parser.parse_args();dz=args.dz
  with h5py.File(OUT/f'response_dz{dz:g}_z60.h5') as h:
   assert h.attrs['complete']
   meta=dict(h.attrs);df=float(meta['frequency_spacing_hz']);f0=float(meta['carrier_hz']);period=1/df
@@ -21,8 +22,8 @@ def main():
  # Each step advances the actual carrier phase by 1/24 cycle modulo whole
  # periods. The time display reports those actual times; stroboscopic sampling
  # makes the carrier phase progression visible without plotting every cycle.
- times=[30e-6]
- while times[-1]<.003:
+ times=[0.] if args.continuous else [30e-6]
+ while times[-1]<(.0038 if args.continuous else .003):
   cycles=1 if times[-1]<140e-6 else 10 if times[-1]<700e-6 else 100
   times.append(times[-1]+(cycles+1/24)/f0)
  times=np.asarray(times)
@@ -30,18 +31,28 @@ def main():
  sigma=meta['field_envelope_FWHM_s']/np.sqrt(8*np.log(2));t0=meta['source_peak_time_s']
  weights=df*sigma*np.sqrt(2*np.pi)*np.exp(-.5*(2*np.pi*offsets*sigma)**2)*np.exp(2j*np.pi*offsets*t0)
  modes=np.rint(offsets/df).astype(int)%nf
- path=OUT/'movie.h5'
+ path=OUT/('startup_movie.h5' if args.continuous else 'movie.h5')
  with h5py.File(path,'w') as out:
   out.attrs.update(meta);out.attrs['time_sampling']='Stroboscopic carrier phase, actual physical time in labels; carrier advances 1/24 cycle per frame modulo whole periods'
+  if args.continuous:
+   out.attrs.update(source_label='Continuous illumination: switch-on',display_note='Causal switch-on response; carrier shown stroboscopically; actual time displayed')
   out['time_s']=times;out['height_m']=selected_z;out['ne_m3']=selected_ne
   out['views/overview']=[0,n_overview];out['views/closeup']=[n_overview,n_overview+n_close];out['views/wave_path']=[n_overview+n_close,len(indices)]
   fields={name:out.create_dataset(name,shape=(len(times),len(indices)),dtype='complex64',compression='lzf') for name in ['Ex','Ey','Ez','Jx','Jy','Jz','density']}
   fluxes={name:out.create_dataset(name,shape=(len(times),len(indices)),dtype='f4',compression='lzf') for name in ['EM_flux','pressure_flux']}
-  peaks=np.zeros(nf);pre=0.;maximum=0.
+  peaks=np.zeros(nf);pre=0.;maximum=0.;steady_error=0.;steady_max=0.
   for start in range(0,len(indices),256):
    stop=min(start+256,len(indices));n=selected_ne[start:stop]
    fs=np.zeros((nf,10,stop-start),np.complex64);fs[modes]=spectrum[:,:,start:stop]*weights[:,None,None]
    envelopes=fft(fs,axis=0,workers=1);del fs
+   if args.continuous:
+    # Integrating a causal Gaussian-pulse envelope gives the response to
+    # a smooth error-function switch-on, for the same linear rotating-frame operator.
+    envelopes=cumulative_trapezoid(envelopes,fft_time,axis=0,initial=0)/ (sigma*np.sqrt(2*np.pi))
+    cw=spectrum[len(offsets)//2,:,start:stop]
+    last=np.argmin(abs(fft_time-times[-1]))
+    steady_error=max(steady_error,float(np.max(abs(envelopes[last,2]-cw[2]))))
+    steady_max=max(steady_max,float(np.max(abs(cw[2]))))
    # Monitor electric energy amplitude and density amplitude over the entire
    # period; all outputs use the same transform and absolute normalization.
    norm=np.max(abs(envelopes[:,2]),axis=1);peaks=np.maximum(peaks,norm)
@@ -57,6 +68,14 @@ def main():
   out['validation/time_s']=fft_time;out['validation/peak_Ez_V_m']=peaks
   pre=np.max(peaks[fft_time<10e-6])/peaks.max();tail=np.max(peaks[fft_time>.003])/peaks.max()
   out.attrs.update(prepulse_relative_Ez=pre,late_relative_Ez=tail)
+  if args.continuous:
+   out.attrs['final_Ez_relative_error_from_harmonic']=steady_error/steady_max
+   out.attrs['switch_on_envelope']='Integral of 10 us FWHM Gaussian, centered at 60 us; zero initial wave state; carrier 5.340 MHz'
+   out['provenance/prepare']=Path(__file__).read_text()
+   assert pre<.002,pre
+   assert steady_error/steady_max<.005,('not at steady state',steady_error/steady_max)
+   print('STARTUP CHECK',pre,'final CW error',steady_error/steady_max,'frames',len(times),flush=True)
+   return
   first=times<75e-6
   amplitude=np.sqrt(sum(abs(fields[name][:,0])**2 for name in ['Ex','Ey','Ez']))
   tt=times[first];aa=amplitude[first];half=aa.max()/2
