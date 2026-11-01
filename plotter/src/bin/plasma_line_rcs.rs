@@ -17,39 +17,30 @@ fn main()->Result<()>{
  let mut ax=Axes::new([t[0],*t.last().unwrap()],[-115.,-60.],"",r"Equivalent RCS (dB m$^2$)");
  ax.yticks=vec![-110.,-100.,-90.,-80.,-70.,-60.];
  time_axes::time_axes(&mut ax,true,true)?;
- // Independent right-axis coordinates, NOT a fixed RCS-to-SNR conversion:
- // the event calibration and range vary. Plot actual SNR from each record.
- let snr_to_primary=|db:f64|db-105.;
- ax.secondary_y=Some(SecondaryAxis::new("SNR (dB)",vec![-10.,0.,10.,20.,30.,40.],snr_to_primary)?);
+ // A common display conversion uses the median event RCS-to-SNR offset.
+ // Column 7 is fitted line power/noise power in a 22.727 kHz bandwidth.
+ // Preserve the individual calibrated RCS and SNR values in the HDF5 catalogue.
+ let mut offsets:Vec<f64>=rows.chunks(14)
+  .filter(|r|r[0]<2. && r[7]>0. && r[7].is_finite() && r[9].is_finite())
+  .map(|r|10.*r[7].log10()-r[9]).collect();
+ offsets.sort_by(f64::total_cmp);
+ anyhow::ensure!(!offsets.is_empty(),"No valid RCS/SNR calibration pairs");
+ let n=offsets.len();
+ let offset=if n%2==0 {(offsets[n/2-1]+offsets[n/2])/2.}else{offsets[n/2]};
+ ax.secondary_y=Some(SecondaryAxis::new("SNR (dB)",vec![-10.,0.,10.,20.,30.,40.],|db|db-offset)?);
  f.panels[p].axes=Some(ax);
  for j in 0..2 {
-  let color=if j==0{B}else{R};
   let rgb=if j==0{[0.141,0.341,0.455]}else{[0.545,0.224,0.251]};
   let shape=if j==0{MarkerShape::Circle}else{MarkerShape::Diamond};
   let mut selected:Vec<_>=rows.chunks(14).filter(|r|r[0] as usize==j).collect();
   selected.sort_by(|a,b|a[2].total_cmp(&b[2]));
   let rcs:Vec<_>=selected.iter().map(|r|[(r[2]-1525392000.)/3600.,r[9]]).collect();
-  // Column 7 is fitted excess spectral area times 44 us: line power divided
-  // by noise power in 1/(44 us)=22.727 kHz. It is not the tallest FFT bin.
-  let snr:Vec<_>=selected.iter().map(|r|[(r[2]-1525392000.)/3600.,snr_to_primary(10.*r[7].log10())]).collect();
-  let mut connected=vec![];
-  for (i,&point) in snr.iter().enumerate(){
-   if i>0 && (point[0]-snr[i-1][0])*3600.>100. {connected.push([f64::NAN;2]);}
-   connected.push(point);
-  }
-  let mut line=Line::new(connected,color);line.width_pt=0.8;
-  if j==1 {line.dash=Some("3 2".into());}
-  f.panels[p].push(Layer::Line(line));
-  markers(&mut f,p,&snr,rgb,MarkerShape::HorizontalCap)?;
   markers(&mut f,p,&rcs,rgb,shape)?;
  }
- let mut snr5=LegendEntry::line("5.34 MHz SNR",R);
- if let LegendSymbol::Line{dash,..}=&mut snr5.symbol {*dash=Some("3 2".into());}
  let mut legend=Legend::new(vec![
-  LegendEntry::marker("4.51 MHz RCS",MarkerShape::Circle,B),
-  LegendEntry::marker("5.34 MHz RCS",MarkerShape::Diamond,R),
-  LegendEntry::line("4.51 MHz SNR",B),snr5]);
- legend.columns=2;legend.position=LegendPosition::UpperRight;
+  LegendEntry::marker("4.51 MHz",MarkerShape::Circle,B),
+  LegendEntry::marker("5.34 MHz",MarkerShape::Diamond,R)]);
+ legend.columns=1;legend.position=LegendPosition::UpperRight;
  f.panels[p].legend=Some(legend);
  for ext in ["png","pdf"]{f.save(format!("figures/plasma_line_rcs_time.{ext}"))?;}
  if std::env::args().any(|s|s=="--time-only"){return Ok(());}
