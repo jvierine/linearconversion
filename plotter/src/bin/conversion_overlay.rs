@@ -183,16 +183,18 @@ fn main() -> Result<()> {
             let length = dx.hypot(dy);
             let ux = dx / length;
             let uy = dy / length;
+            // Leave a physical 1.4 mm gap so the arrow does not obscure its target pixel.
+            let tip = [end[0] - 1.4 * ux / sx, end[1] - 1.4 * uy / sy];
             let a = [
-                end[0] - (2. * ux + 0.8 * uy) / sx,
-                end[1] - (2. * uy - 0.8 * ux) / sy,
+                tip[0] - (2. * ux + 0.8 * uy) / sx,
+                tip[1] - (2. * uy - 0.8 * ux) / sy,
             ];
             let b = [
-                end[0] - (2. * ux - 0.8 * uy) / sx,
-                end[1] - (2. * uy + 0.8 * ux) / sy,
+                tip[0] - (2. * ux - 0.8 * uy) / sx,
+                tip[1] - (2. * uy + 0.8 * ux) / sy,
             ];
             fig.panels[p].push(Layer::Line(Line::new(
-                vec![start, end, a, end, b],
+                vec![start, tip, a, tip, b],
                 "#ffffff",
             )));
             let text = fig.panels[p].label_at(label, [start[0], start[1] - 0.85]);
@@ -223,15 +225,17 @@ fn main() -> Result<()> {
             let length = dx.hypot(dy);
             let ux = dx / length;
             let uy = dy / length;
+            // Leave a physical 1.4 mm gap so the arrow does not obscure its target pixel.
+            let tip = [end[0] - 1.4 * ux / sx, end[1] - 1.4 * uy / sy];
             let a = [
-                end[0] - (1.5 * ux + 0.6 * uy) / sx,
-                end[1] - (1.5 * uy - 0.6 * ux) / sy,
+                tip[0] - (1.5 * ux + 0.6 * uy) / sx,
+                tip[1] - (1.5 * uy - 0.6 * ux) / sy,
             ];
             let b = [
-                end[0] - (1.5 * ux - 0.6 * uy) / sx,
-                end[1] - (1.5 * uy + 0.6 * ux) / sy,
+                tip[0] - (1.5 * ux - 0.6 * uy) / sx,
+                tip[1] - (1.5 * uy + 0.6 * ux) / sy,
             ];
-            let mut line = Line::new(vec![start, end, a, end, b], "#ffffff");
+            let mut line = Line::new(vec![start, tip, a, tip, b], "#ffffff");
             line.width_pt = 0.65;
             fig.panels[p].push(Layer::Line(line));
         }
