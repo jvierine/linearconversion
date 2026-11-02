@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     marker.dash = Some("3 3".into());
     marker.width_pt = 0.6;
     f.panels[p].push(Layer::Line(marker));
-    let a = line(
+    line(
         &mut f,
         p,
         rows.iter()
@@ -61,20 +61,6 @@ fn main() -> Result<()> {
         "MSIS collisions",
         false,
     );
-    let cases = h.group("checks/cases")?;
-    let mut control = vec![];
-    for name in cases.member_names()? {
-        let g = cases.group(&name)?;
-        if g.attr("control")?.read_scalar::<bool>()? {
-            control.push([
-                10. * g.attr("RCS_m2")?.read_scalar::<f64>()?.log10(),
-                g.attr("center_m")?.read_scalar::<f64>()? / 1000.,
-            ]);
-        }
-    }
-    control.sort_by(|a, b| a[1].total_cmp(&b[1]));
-    let b = line(&mut f, p, control, 1, "Fixed collisions", true);
-    f.panels[p].legend = Some(Legend::new(vec![a, b]));
     let mut arrow = Line::new(
         vec![
             [-146., 98.],
