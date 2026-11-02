@@ -19,7 +19,7 @@ barrows=np.flatnonzero(nonwhite[bottom+40:].sum(axis=1)>rgb.shape[1]*.6)+bottom+
 size=(1280,960);box=(0,0,*size)
 fontpath=subprocess.check_output(['fc-match','-f','%{file}','STIX Two Text']).decode()
 font=ImageFont.truetype(fontpath,24);small=ImageFont.truetype(fontpath,20)
-floor,ceiling=-20.,10.;sigma_mhz=.20;subtraction=.85
+floor,ceiling=-20.,10.;sigma_mhz=.10;subtraction=.85
 parser=argparse.ArgumentParser();parser.add_argument('--preview',type=int);args=parser.parse_args()
 with h5py.File(ROOT/'data/plasma_line_rcs.h5') as h:
  rows=h['catalog/rows'][:];rows=rows[np.isin(rows[:,0],[0,1])];times=h['time_unix_s'][:]
