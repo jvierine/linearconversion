@@ -6,7 +6,7 @@
 
 Both MP4s show all 1,407 records in chronological order, at 30 output frames/s. Quiet intervals advance at 30 records/s, nearby intervals at 5 records/s, and detections at 2 records/s. The strongest RCS record in each of eight episodes is held for three seconds. Detections separated by more than 90 seconds start a new episode.
 
-The current MP4 subtracts half of a Gaussian-smoothed frequency background (standard deviation 350 kHz) from linear excess power/noise before logarithmic display. This gentler subtraction preserves more broad emission. The previous version subtracted the full background with a 100 kHz standard deviation. It does not filter across altitude or time. The current fixed display range is -20 to 10 dB relative to noise (previously -15 to 20 dB); negative and weaker residuals use the lowest color. This display filter is not deconvolution or a quantitative power correction. The original spectra and catalogue remain unchanged.
+The current MP4 subtracts 85% of a Gaussian-smoothed frequency background (standard deviation 200 kHz) from linear excess power/noise before logarithmic display. This gentler subtraction preserves more broad emission. The previous version subtracted the full background with a 100 kHz standard deviation. It does not filter across altitude or time. The current fixed display range is -20 to 10 dB relative to noise (previously -15 to 20 dB); negative and weaker residuals use the lowest color. This display filter is not deconvolution or a quantitative power correction. The original spectra and catalogue remain unchanged.
 
 The record timing and filter settings are in `data/plasma_line_movie_compact_timing.h5` (current) and `data/plasma_line_movie_timing.h5` (previous).
 

@@ -19,7 +19,7 @@ barrows=np.flatnonzero(nonwhite[bottom+40:].sum(axis=1)>rgb.shape[1]*.6)+bottom+
 size=(1280,960);box=(0,0,*size)
 fontpath=subprocess.check_output(['fc-match','-f','%{file}','STIX Two Text']).decode()
 font=ImageFont.truetype(fontpath,24);small=ImageFont.truetype(fontpath,20)
-floor,ceiling=-20.,10.;sigma_mhz=.35;subtraction=.5
+floor,ceiling=-20.,10.;sigma_mhz=.20;subtraction=.85
 parser=argparse.ArgumentParser();parser.add_argument('--preview',type=int);args=parser.parse_args()
 with h5py.File(ROOT/'data/plasma_line_rcs.h5') as h:
  rows=h['catalog/rows'][:];rows=rows[np.isin(rows[:,0],[0,1])];times=h['time_unix_s'][:]
@@ -76,6 +76,6 @@ if args.preview is not None:raise SystemExit(0)
 proc.stdin.close();assert proc.wait()==0
 with h5py.File(ROOT/'data/plasma_line_movie_compact_timing.h5','w') as h:
  h['time_unix_s']=times;h['video_frames_per_record']=duration;h['episode_peak_record_index']=holds;h['detection_record_index']=ids
- h.attrs.update(video_fps=fps,gaussian_sigma_mhz=sigma_mhz,background_subtraction_fraction=subtraction,filter_axis='frequency only; q-0.5*gaussian(q), applied to linear excess/noise before log display',display_floor_db=floor,display_ceiling_db=ceiling,quiet_records_per_second=30,context_records_per_second=5,detection_records_per_second=2,peak_hold_s=3,raw_data_unchanged=True,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+ h.attrs.update(video_fps=fps,gaussian_sigma_mhz=sigma_mhz,background_subtraction_fraction=subtraction,filter_axis='frequency only; q-0.85*gaussian(q), applied to linear excess/noise before log display',display_floor_db=floor,display_ceiling_db=ceiling,quiet_records_per_second=30,context_records_per_second=5,detection_records_per_second=2,peak_hold_s=3,raw_data_unchanged=True,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
  h['provenance/script']=Path(__file__).read_text()
 print(out,'duration',duration.sum()/fps,'seconds; holds',holds,flush=True)
