@@ -104,7 +104,7 @@ fn main() -> Result<()> {
     let mut head = Line::new(vec![left, end, right], "#171717");
     head.width_pt = 1.2;
     f.panels[ps[0]].push(Layer::Line(head));
-    f.panels[ps[0]].label_at(r"$\mathbf B_0$", [285., -20.]);
+    f.panels[ps[0]].label_at(r"$\bar{\mathbf B}$", [285., -20.]);
     let mut leg = Legend::new(keys);
     // Fixed clear corner, checked in the rendered manuscript.
     leg.avoid_data = false;
@@ -160,7 +160,7 @@ fn main() -> Result<()> {
     head.dash = None;
     head.width_pt = 1.3;
     f.panels[zoom].push(Layer::Line(head));
-    f.panels[zoom].label_at(r"$\mathbf E$", [-19.5, 10.]);
+    f.panels[zoom].label_at(r"$\delta\mathbf E$", [-19.5, 10.]);
     // Leader links the actual turning point to the inset without covering B0.
     let mut leader = Line::new(vec![[5., critical + 4.], [600., 40.], [600., -60.]], "#777777");
     leader.width_pt = 0.6;
