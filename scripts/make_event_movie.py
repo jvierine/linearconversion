@@ -19,7 +19,7 @@ barrows=np.flatnonzero(nonwhite[bottom+40:].sum(axis=1)>rgb.shape[1]*.6)+bottom+
 size=(1280,960);box=(0,0,*size)
 fontpath=subprocess.check_output(['fc-match','-f','%{file}','STIX Two Text']).decode()
 font=ImageFont.truetype(fontpath,24);small=ImageFont.truetype(fontpath,20)
-floor,ceiling=-20.,10.;sigma_mhz=.10;subtraction=.85
+floor,ceiling=-25.,10.;sigma_mhz=.10;subtraction=.85
 parser=argparse.ArgumentParser();parser.add_argument('--preview',type=int);args=parser.parse_args()
 with h5py.File(ROOT/'data/plasma_line_rcs.h5') as h:
  rows=h['catalog/rows'][:];rows=rows[np.isin(rows[:,0],[0,1])];times=h['time_unix_s'][:]
@@ -29,7 +29,7 @@ for group in groups:
  sub=rows[np.isin(rows[:,1],group)];holds.append(int(sub[np.argmax(sub[:,8]),1]))
 fps=30;duration=np.ones(len(times),dtype=int)
 near=np.min(abs(times[:,None]-times[ids][None,:]),axis=1)<=30;duration[near]=6;duration[ids]=15;duration[holds]=90
-out=OUT/'plasma_line_events_compact_gentle_filter.mp4'
+out=OUT/'plasma_line_events_noise_visible.mp4'
 cmd=['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pixel_format','rgb24','-video_size',f'{size[0]}x{size[1]}','-framerate',str(fps),'-i','-','-an','-c:v','libx264','-preset','fast','-crf','27','-pix_fmt','yuv420p','-movflags','+faststart',str(out)]
 proc=None if args.preview is not None else subprocess.Popen(cmd,stdin=subprocess.PIPE)
 with h5py.File(source) as h:
@@ -59,7 +59,7 @@ with h5py.File(source) as h:
   text((1260,21),'Filtered excess / noise (dB)',anchor='ra')
   bar=np.repeat(lut[np.linspace(len(lut)-1,0,200).astype(int)][:,None,:],14,axis=1)
   im.paste(Image.fromarray(bar),(1246,60));d=ImageDraw.Draw(im)
-  for value in [-20,-10,0,10]:
+  for value in [-25,-20,-10,0,10]:
    yy=60+(ceiling-value)/(ceiling-floor)*199;d.line([(1240,yy),(1246,yy)],fill='white',width=1);text((1235,yy),str(value),anchor='rm')
   for row in rows[rows[:,1]==i]:
    f0=abs(row[3]);z0=row[4];start=xy(f0+.32,z0-4);tip=xy(f0+.035,z0-.45);v=np.array(tip)-start;v=v/np.linalg.norm(v);perp=np.array([-v[1],v[0]])

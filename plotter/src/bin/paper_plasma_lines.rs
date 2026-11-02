@@ -41,7 +41,7 @@ fn main() -> Result<()> {
     let panels = fig.grid(1, 2)?;
     fig.height_mm = 124.;
     let sc = fig.scale(Scale::new(
-        [-15., 5.],
+        [-20., 5.],
         Normalization::Linear,
         ColorMap::ember(),
     )?);
@@ -63,7 +63,7 @@ fn main() -> Result<()> {
         fig.panels[p].axes = Some(ax);
         let values = read(&h, &format!("{name}/filtered_excess_snr"))?
             .iter()
-            .map(|v| 10. * v.max(10_f64.powf(-1.5)).log10())
+            .map(|v| 10. * v.max(10_f64.powf(-2.)).log10())
             .collect();
         fig.panels[p].push(Layer::Pcolormesh(Field::new(
             edges(&x),
@@ -163,7 +163,7 @@ fn main() -> Result<()> {
         Rect::new(38., 108., 117., 3.),
         sc,
         "Filtered excess / noise (dB)",
-        vec![-15., -10., -5., 0., 5.],
+        vec![-20., -10., 0., 5.],
     );
     cb.horizontal = true;
     fig.colorbars.push(cb);

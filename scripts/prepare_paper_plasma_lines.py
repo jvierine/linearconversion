@@ -23,6 +23,6 @@ with h5py.File(source) as src, h5py.File(root/'data/paper_plasma_lines.h5','w') 
     with h5py.File(root/'data/conversion_overlay_1525453430.h5') as overlay:
         for key in ['ion_height_km','ion_plasma_line_mhz','model_height_km','model_plasma_line_mhz']:
             out[key]=overlay[key][:]
-    out.attrs.update(gaussian_sigma_mhz=.100,background_subtraction_fraction=.85,filter_axis='frequency',display_floor_db=-15.,display_ceiling_db=5.,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+    out.attrs.update(gaussian_sigma_mhz=.100,background_subtraction_fraction=.85,filter_axis='frequency',display_floor_db=-20.,display_ceiling_db=5.,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
     out['provenance/script']=Path(__file__).read_text()
 print(root/'data/paper_plasma_lines.h5')
