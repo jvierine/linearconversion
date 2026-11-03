@@ -26,20 +26,20 @@ fn main() -> Result<()> {
         .unwrap_or("reference/coupled/radar_sensitivity.h5".into());
     let h = File::open(path)?;
     let obs = db(h.attr("reference_RCS_m2")?.read_scalar::<f64>()?);
-    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 142.)?;
+    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 131.)?;
     let ps = f.grid(2, 2)?;
-    f.height_mm = 142.;
+    f.height_mm = 131.;
     for (i, &p) in ps.iter().enumerate() {
         f.panels[p].rect = Rect::new(
             if i % 2 == 0 { 22. } else { 112. },
-            if i < 2 { 8. } else { 78. },
+            if i < 2 { 8. } else { 67. },
             60.,
             44.,
         );
         f.labels.push(Label::new(
             format!("({})", ['a', 'b', 'c', 'd'][i]),
             if i == 0 { 17. } else if i % 2 == 0 { 22. } else { 112. },
-            if i < 2 { 3. } else { 73. },
+            if i < 2 { 3. } else { 62. },
         ));
     }
     let p = ps[0];
@@ -128,20 +128,20 @@ fn main() -> Result<()> {
         label.leader = Some(anchor);
         f.labels.push(label);
     }
-    let mut optimum_label = Label::new("Optimum", 160., 14.);
+    let mut optimum_label = Label::new("Optimum", 141., 11.);
     optimum_label.leader = Some(xy(opt[0], opt[1]));
     f.labels.push(optimum_label);
     let mut cb = Colorbar::new(
-        Rect::new(139., 66., 33., 1.6),
+        Rect::new(153.5, 14., 15., 1.4),
         sc,
         "",
-        vec![-120., -100., -80.],
+        vec![-120., -80.],
     );
     cb.horizontal = true;
     f.colorbars.push(cb);
-    // Put the colorbar title beside the short strip, avoiding a third
-    // text row between panels while retaining manuscript-sized type.
-    f.labels.push(Label::new(r"RCS (dB m$^2$)", 123., 67.));
+    // Inset the complete color key in the upper-right of panel (b), so
+    // it reserves no vertical space between the two rows of panels.
+    f.labels.push(Label::new(r"RCS (dB m$^2$)", 161., 10.));
     f.auto_colorbar_layout = false;
     let p = ps[2];
     let mut ax = Axes::new([1e-3, 1e4], [-120., -40.], "HF EIRP (W)", r"RCS (dB m$^2$)");
