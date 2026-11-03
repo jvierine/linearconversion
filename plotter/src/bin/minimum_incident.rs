@@ -67,12 +67,12 @@ fn main() -> Result<()> {
     f.labels.push(Label::new("(a)", 20., 3.));
     f.labels.push(Label::new("(b)", 82., 3.));
     save(&f, "minimum_incident_wave")?;
-    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 165.)?;
+    let mut f = ArticleLayout::new(177., 10.)?.figure(1., 150.)?;
     let ps = f.grid(2, 2)?;
-    f.height_mm = 165.;
+    f.height_mm = 150.;
     f.auto_colorbar_layout = false;
     for i in 0..2 {
-        f.panels[ps[i]].rect = Rect::new(20. + 88. * i as f64, 101., 57., 48.);
+        f.panels[ps[i]].rect = Rect::new(20. + 83. * i as f64, 86., 65., 48.);
     }
     f.panels[ps[0]].axes = Some(Axes::new(
         [0., 1.],
@@ -120,13 +120,13 @@ fn main() -> Result<()> {
     let cuts = File::open("data/steady_spatial_cuts.h5")?;
     for (j, name) in ["Ez", "density"].iter().enumerate() {
         let p = ps[j + 2];
-        let x0 = 20. + 88. * j as f64;
-        f.panels[p].rect = Rect::new(x0, 6., 57., 48.);
+        let x0 = 20. + 83. * j as f64;
+        f.panels[p].rect = Rect::new(x0, 6., 65., 48.);
         let xe: Vec<f64> = cuts.dataset(&format!("{name}/x_edges_m"))?.read_raw()?;
         let ze: Vec<f64> = cuts.dataset(&format!("{name}/z_edges_m"))?.read_raw()?;
         let values: Vec<f64> = cuts.dataset(&format!("{name}/instantaneous"))?.read_raw()?;
         let mut ax = Axes::new([-120.,120.], [ze[0],*ze.last().unwrap()],
-            "Horizontal distance (m)", "Height relative to resonance (m)");
+            "Horizontal distance (m)", if j==0 {"Height relative to resonance (m)"}else{""});
         ax.xticks=vec![-100.,0.,100.];
         ax.yticks=if j==0 {vec![-80.,-40.,0.,40.]}else{vec![-12.,-8.,-4.,0.]};
         f.panels[p].axes=Some(ax);
@@ -134,13 +134,13 @@ fn main() -> Result<()> {
         let sc=f.scale(Scale::new([-lim,lim], Normalization::Asinh {width:if j==0 {0.1}else{0.06}}, ColorMap::diverging())?);
         f.panels[p].push(Layer::Pcolormesh(Field::new(xe,ze,values,sc)?));
         line(&mut f,p,&[-120.,120.],&[bm,bm],4,"");
-        let mut bar=Colorbar::new(Rect::new(x0,71.,57.,2.5),sc,
+        let mut bar=Colorbar::new(Rect::new(x0,66.,65.,2.5),sc,
             if j==0 {r"$E_z$ (mV/m)"}else{r"$\delta n_e$ ($10^6$ m$^{-3}$)"},
             if j==0 {vec![-12.,-1.,0.,1.,12.]}else{vec![-2.5,-0.5,0.,0.5,2.5]});
         bar.horizontal=true;
         f.colorbars.push(bar);
     }
-    for (label,x,y) in [("(a)",20.,3.),("(b)",108.,3.),("(c)",20.,96.),("(d)",108.,96.)] {
+    for (label,x,y) in [("(a)",20.,3.),("(b)",103.,3.),("(c)",20.,81.),("(d)",103.,81.)] {
         f.labels.push(Label::new(label,x,y));
     }
     save(&f, "minimum_incident_bragg")?;
