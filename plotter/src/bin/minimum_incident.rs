@@ -72,7 +72,7 @@ fn main() -> Result<()> {
     f.height_mm = 165.;
     f.auto_colorbar_layout = false;
     for i in 0..2 {
-        f.panels[ps[i]].rect = Rect::new(20. + 88. * i as f64, 6., 57., 48.);
+        f.panels[ps[i]].rect = Rect::new(20. + 88. * i as f64, 101., 57., 48.);
     }
     f.panels[ps[0]].axes = Some(Axes::new(
         [0., 1.],
@@ -121,7 +121,7 @@ fn main() -> Result<()> {
     for (j, name) in ["Ez", "density"].iter().enumerate() {
         let p = ps[j + 2];
         let x0 = 20. + 88. * j as f64;
-        f.panels[p].rect = Rect::new(x0, 81., 57., 48.);
+        f.panels[p].rect = Rect::new(x0, 6., 57., 48.);
         let xe: Vec<f64> = cuts.dataset(&format!("{name}/x_edges_m"))?.read_raw()?;
         let ze: Vec<f64> = cuts.dataset(&format!("{name}/z_edges_m"))?.read_raw()?;
         let values: Vec<f64> = cuts.dataset(&format!("{name}/instantaneous"))?.read_raw()?;
@@ -134,13 +134,13 @@ fn main() -> Result<()> {
         let sc=f.scale(Scale::new([-lim,lim], Normalization::Asinh {width:if j==0 {0.1}else{0.06}}, ColorMap::diverging())?);
         f.panels[p].push(Layer::Pcolormesh(Field::new(xe,ze,values,sc)?));
         line(&mut f,p,&[-120.,120.],&[bm,bm],4,"");
-        let mut bar=Colorbar::new(Rect::new(x0,146.,57.,2.5),sc,
+        let mut bar=Colorbar::new(Rect::new(x0,71.,57.,2.5),sc,
             if j==0 {r"$E_z$ (mV/m)"}else{r"$\delta n_e$ ($10^6$ m$^{-3}$)"},
             if j==0 {vec![-12.,-1.,0.,1.,12.]}else{vec![-2.5,-0.5,0.,0.5,2.5]});
         bar.horizontal=true;
         f.colorbars.push(bar);
     }
-    for (label,x,y) in [("(a)",20.,3.),("(b)",108.,3.),("(c)",20.,76.),("(d)",108.,76.)] {
+    for (label,x,y) in [("(a)",20.,3.),("(b)",108.,3.),("(c)",20.,96.),("(d)",108.,96.)] {
         f.labels.push(Label::new(label,x,y));
     }
     save(&f, "minimum_incident_bragg")?;
