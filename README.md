@@ -15,8 +15,8 @@ plasma-line analysis, scientific figures, and the coupled Maxwell–electron-flu
 
 Clone with `git clone --recurse-submodules https://github.com/jvierine/linearconversion.git`.
 
-Requires conda base, Rust, HDF5, MPI, and a TeX installation. Private solver
-dependencies require GitHub access. Run from this repository root:
+Requires conda base, Rust, HDF5, MPI, and a TeX installation. The solver dependencies are public and pinned to exact revisions.
+No GitHub login is required. Run from this repository root:
 
 ```sh
 conda run -n base python -m pip install -r requirements.txt

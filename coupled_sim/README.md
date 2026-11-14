@@ -8,8 +8,8 @@ as HDF5 inputs. Raw radar voltages are not included.
 ## Run
 
 Requires Rust, an MPI development installation (required by the FDTD crate),
-and Python with NumPy, SciPy and h5py. These repositories currently require
-GitHub access. Authenticate Git with `gh auth setup-git` if necessary.
+and Python with NumPy, SciPy and h5py. All solver repositories are public; no GitHub login or SSH key is required.
+Cargo fetches the exact dependency revisions pinned in `Cargo.toml`.
 
 ```sh
 git clone --recurse-submodules https://github.com/jvierine/linearconversion.git
@@ -20,6 +20,24 @@ conda run -n base python scripts/validate_warm.py
 conda run -n base python scripts/reproduce.py
 conda run -n base python scripts/check_reference.py
 ```
+
+## Paper angle scan and a Python plot
+
+From the repository root, after the build above:
+
+```sh
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+conda run -n base python -m pip install matplotlib
+conda run --no-capture-output -n base python coupled_sim/scripts/minimum_incident_power.py
+conda run -n base python coupled_sim/scripts/plot_density_amplitude.py coupled_sim/output/coupled/minimum_incident/best_model.h5
+```
+
+The scan optimizes angle and polarization and repeats the best case on a finer
+grid. It solves the sustained harmonic response, without Rust time marching.
+Outputs are `scan.h5`, `best_model.h5`, and `density_amplitude.png` in
+`coupled_sim/output/coupled/minimum_incident/`. Rerunning replaces them.
+The plotting script restores physical density amplitude using the saved incident
+flux; the stored phasor is normalized to 1 W/m² upward incident flux.
 
 ## Physics validation
 
